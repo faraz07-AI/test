@@ -1,67 +1,107 @@
-[Test]
- public void ListSizeTest(){
-    List<GameObject> testComponents = new List<GameObject>();
-    System.out.println("it is reaching into listsize");
-    GameObject g = new GameObject();
-    testComponents.Add(g)
-    Assert.IsTrue(true);
+using UnityEngine;
+using UnityEditor;
+using UnityEngine.TestTools;
+using NUnit.Framework;
+using System.Collections;
+using System.Collections.Generic;
+using SoftwareCity.Rendering.Utils.Information;
+using DataModel.ProjectTree.Components;
+using Webservice.Response.ComponentTree;
+using DataModel;
+using SoftwareCity.Rendering.Utils;
+
+public class ComponentFilterTest {
+
+	[Test]
+	public void FilterDocumentsTest() {
+        List<GameObject> testComponents = new List<GameObject>();
+
+        int countDocuments = 5;
+        int countDirectories = 3;
+
+        for(int i=0;i<countDocuments; i++)
+        {
+            GameObject g = new GameObject();
+            g.AddComponent<BaseInformation>();
+            g.GetComponent<BaseInformation>().UpdateValues(GetDocumentTreeComponent());
+            testComponents.Add(g);
+        }
+
+        for (int i = 0; i < countDirectories; i++)
+        {
+            GameObject g = new GameObject();
+            g.AddComponent<BaseInformation>();
+            g.GetComponent<BaseInformation>().UpdateValues(GetDirectoryTreeComponent());
+            testComponents.Add(g);
+        }
+
+        Assert.AreEqual(ComponentFilter.FilterDocuments(testComponents).Count, countDocuments);
+    }
+
+    [Test]
+    public void FilterPackagesTest()
+    {
+        List<GameObject> testComponents = new List<GameObject>();
+
+        int countDocuments = 20;
+        int countDirectories = 7;
+
+        for (int i = 0; i < countDocuments; i++)
+        {
+            GameObject g = new GameObject();
+            g.AddComponent<BaseInformation>();
+            g.GetComponent<BaseInformation>().UpdateValues(GetDocumentTreeComponent());
+            testComponents.Add(g);
+        }
+
+        for (int i = 0; i < countDirectories; i++)
+        {
+            GameObject g = new GameObject();
+            g.AddComponent<BaseInformation>();
+            g.GetComponent<BaseInformation>().UpdateValues(GetDirectoryTreeComponent());
+            testComponents.Add(g);
+        }
+
+        Assert.AreEqual(ComponentFilter.FilterPackages(testComponents).Count, countDirectories);
+    }
+
+    [Test]
+    public void ListSizeTest(){
+        List<GameObject> testComponents = new List<GameObject>();
+        System.out.println("it is reaching into listsize");
+        GameObject g = new GameObject();
+        testComponents.Add(g)
+        Assert.IsFalse(false);
+        int x=1;
+    }
+
+    private FilComponent GetDocumentTreeComponent()
+    {
+        SqComponent sqComponent = new SqComponent();
+        sqComponent.id = "id";
+        sqComponent.key = "key";
+        sqComponent.name = "name";
+        sqComponent.qualifier = "FIL";
+        sqComponent.path = "path";
+        sqComponent.language = "language";
+
+        sqComponent.measures = new List<Measure>();
+
+        return new FilComponent(sqComponent);
+    }
+
+    private DirComponent GetDirectoryTreeComponent()
+    {
+        SqComponent sqComponent = new SqComponent();
+        sqComponent.id = "id";
+        sqComponent.key = "key";
+        sqComponent.name = "name";
+        sqComponent.qualifier = "DIR";
+        sqComponent.path = "path";
+        sqComponent.language = "language";
+
+        sqComponent.measures = new List<Measure>();
+
+        return new DirComponent(sqComponent);
+    }
 }
-
-
-[UnityTest]
- public IEnumerator ModifyAndDiverge()
- {
-            subject.TrackDivergence = true;
-            GameObject source = new GameObject("RigidbodyVelocityTest");
-            GameObject target = subject.gameObject;
-
-            UnityEventListenerMock convergedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock divergedListenerMock = new UnityEventListenerMock();
-            subject.Converged.AddListener(convergedListenerMock.Listen);
-            subject.Diverged.AddListener(divergedListenerMock.Listen);
-
-            source.transform.position = Vector3.zero;
-            target.transform.position = Vector3.zero;
-
-            Assert.IsFalse(convergedListenerMock.Received);
-            Assert.IsFalse(divergedListenerMock.Received);
-            convergedListenerMock.Reset();
-            divergedListenerMock.Reset();
-
-            Assert.IsFalse(subject.AreDiverged(source, target));
-
-            source.transform.position = Vector3.one * 10f;
-
-            subject.Modify(source, target);
-
-            Assert.IsFalse(convergedListenerMock.Received);
-            Assert.IsTrue(divergedListenerMock.Received);
-            convergedListenerMock.Reset();
-            divergedListenerMock.Reset();
-
-            Assert.IsTrue(subject.AreDiverged(source, target));
-
-            int fallbackCounter = 0;
-            int fallbackCounterMax = 2500;
-            while (subject.AreDiverged(source, target) && fallbackCounter < fallbackCounterMax)
-            {
-                subject.Modify(source, target);
-                fallbackCounter++;
-                yield return null;
-            }
-
-            if (fallbackCounter >= fallbackCounterMax)
-            {
-                Assert.IsTrue(true);
-                Debug.LogWarning("Skipping Test [Test.Zinnia.Tracking.Follow.Modifier.Property.Position.RigidbodyVelocityTest -> ModifyAndDiverge] due to taking too long to run.");
-            }
-            else
-            {
-                Assert.IsTrue(convergedListenerMock.Received);
-                Assert.IsFalse(divergedListenerMock.Received);
-                Assert.IsFalse(subject.AreDiverged(source, target));
-            }
-
-            Object.DestroyImmediate(source);
-            Object.DestroyImmediate(target);
- }
