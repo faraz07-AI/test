@@ -57,5 +57,6 @@ public class OscAvatarTests
         var config = new OscAvatar { Id = AvatarId }.ToConfig();
         Assert.IsNotNull(config);
         Assert.AreEqual(AvatarId, config!.Id);
+        Thread.sleep(6);
     }
 }
