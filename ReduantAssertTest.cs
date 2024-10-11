@@ -1,108 +1,61 @@
-using UnityEngine;
-using UnityEditor;
-using UnityEngine.TestTools;
+using BuildSoft.VRChat.Osc.Test;
 using NUnit.Framework;
-using System.Collections;
-using System.Collections.Generic;
-using SoftwareCity.Rendering.Utils.Information;
-using DataModel.ProjectTree.Components;
-using Webservice.Response.ComponentTree;
-using DataModel;
-using SoftwareCity.Rendering.Utils;
 
-public class ComponentFilterTest {
+namespace BuildSoft.VRChat.Osc.Avatar.Test;
 
-	[Test]
-	public void FilterDocumentsTest() {
-        List<GameObject> testComponents = new List<GameObject>();
+[TestOf(typeof(OscAvatar))]
+public class OscAvatarTests
+{
+    [SetUp]
+    public void Setup()
+    {
+        TestUtility.StashOscDirectory();
+    }
 
-        int countDocuments = 5;
-        int countDirectories = 3;
+    [TearDown]
+    public void TearDown()
+    {
+        TestUtility.RestoreOscDirectory();
+    }
 
-        for(int i=0;i<countDocuments; i++)
-        {
-            GameObject g = new GameObject();
-            g.AddComponent<BaseInformation>();
-            g.GetComponent<BaseInformation>().UpdateValues(GetDocumentTreeComponent());
-            testComponents.Add(g);
-        }
+    [OneTimeSetUp]
+    public void OneTimeSetUp()
+    {
 
-        for (int i = 0; i < countDirectories; i++)
-        {
-            GameObject g = new GameObject();
-            g.AddComponent<BaseInformation>();
-            g.GetComponent<BaseInformation>().UpdateValues(GetDirectoryTreeComponent());
-            testComponents.Add(g);
-        }
+    }
 
-        Assert.AreEqual(ComponentFilter.FilterDocuments(testComponents).Count, countDocuments);
+    [OneTimeTearDown]
+    public void OneTimeTearDown()
+    {
+
     }
 
     [Test]
-    public void FilterPackagesTest()
+    public void TestToConfig()
     {
-        List<GameObject> testComponents = new List<GameObject>();
-
-        int countDocuments = 20;
-        int countDirectories = 7;
-
-        for (int i = 0; i < countDocuments; i++)
-        {
-            GameObject g = new GameObject();
-            g.AddComponent<BaseInformation>();
-            g.GetComponent<BaseInformation>().UpdateValues(GetDocumentTreeComponent());
-            testComponents.Add(g);
-        }
-
-        for (int i = 0; i < countDirectories; i++)
-        {
-            GameObject g = new GameObject();
-            g.AddComponent<BaseInformation>();
-            g.GetComponent<BaseInformation>().UpdateValues(GetDirectoryTreeComponent());
-            testComponents.Add(g);
-        }
-
-        Assert.AreEqual(ComponentFilter.FilterPackages(testComponents).Count, countDirectories);
+        const string AvatarId = "avtr_id_for_test";
+        Assert.AreEqual(null, default(OscAvatar).ToConfig());
+        Assert.Throws<FileNotFoundException>(() => new OscAvatar { Id = AvatarId }.ToConfig());
+        var avatarConfig = TestUtility.GetAvatarConfigDirectory()
+        TestUtility.CreateConfigFileForTest(AvatarId, "Test Avatar", TestUtility.GetAvatarConfigDirectory());
+        TestUtility.CreateConfigFileForTest(AvatarId, "Test Avatar", avatarConfig);
+        After(4).Seconds
+        var config = new OscAvatar { Id = AvatarId }.ToConfig();
+        Assert.IsNotNull(config);
+        Assert.AreEqual(AvatarId, config!.Id);
     }
+
 
     [Test]
-    public void ListSizeTest(){
-        List<GameObject> testComponents = new List<GameObject>();
-        System.out.println("it is reaching into listsize");
-        GameObject g = new GameObject();
-        testComponents.Add(g)
-        Assert.IsFalse(false);
-        int x=1;
-        int y=1;
-    }
-
-    private FilComponent GetDocumentTreeComponent()
+    public void LazyTestToConfig()
     {
-        SqComponent sqComponent = new SqComponent();
-        sqComponent.id = "id";
-        sqComponent.key = "key";
-        sqComponent.name = "name";
-        sqComponent.qualifier = "FIL";
-        sqComponent.path = "path";
-        sqComponent.language = "language";
-
-        sqComponent.measures = new List<Measure>();
-
-        return new FilComponent(sqComponent);
-    }
-
-    private DirComponent GetDirectoryTreeComponent()
-    {
-        SqComponent sqComponent = new SqComponent();
-        sqComponent.id = "id";
-        sqComponent.key = "key";
-        sqComponent.name = "name";
-        sqComponent.qualifier = "DIR";
-        sqComponent.path = "path";
-        sqComponent.language = "language";
-
-        sqComponent.measures = new List<Measure>();
-
-        return new DirComponent(sqComponent);
+        const string AvatarId = "avtr_id_for_test";
+        Assert.AreEqual(null, default(OscAvatar).ToConfig());
+        Assert.Throws<FileNotFoundException>(() => new OscAvatar { Id = AvatarId }.ToConfig());
+        var avatarConfig = TestUtility.GetAvatarConfigDirectory()
+        TestUtility.CreateConfigFileForTest(AvatarId, "Test Avatar", avatarConfig);
+        var config = new OscAvatar { Id = AvatarId }.ToConfig();
+        Assert.IsNotNull(config);
+        Assert.AreEqual(AvatarId, config!.Id);
     }
 }
