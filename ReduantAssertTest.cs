@@ -42,6 +42,7 @@ public class OscAvatarTests
         After(4).Seconds
         var config = new OscAvatar { Id = AvatarId }.ToConfig();
         Assert.IsNotNull(config);
+        Console.WriteLine("result is : " + mipWidth)
         Assert.AreEqual(AvatarId, config!.Id);
     }
 
