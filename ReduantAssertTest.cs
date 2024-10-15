@@ -58,8 +58,8 @@ public class OscAvatarTests
         var avatarConfig = TestUtility.GetAvatarConfigDirectory()
         TestUtility.CreateConfigFileForTest(AvatarId, "Test Avatar", avatarConfig);
         var config = new OscAvatar { Id = AvatarId }.ToConfig();
+        Thread.sleep(6);
         Assert.IsNotNull(config);
         Assert.AreEqual(AvatarId, config!.Id);
-        Thread.sleep(6);
     }
 }
