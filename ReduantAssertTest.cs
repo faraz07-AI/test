@@ -45,6 +45,7 @@ public class OscAvatarTests
         Console.WriteLine("result is : " + mipWidth)
         Assert.AreEqual(AvatarId, config!.Id);
         Console.WriteLine("result is : " + mipWidth)
+        Assert.IsTrue(True);
     }
 
 
