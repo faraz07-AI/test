@@ -48,7 +48,7 @@ public class OscAvatarTests
         Assert.IsTrue(true);
     }
 
-
+    [Test]
     public void TaskDelayTest()
     {
         const string AvatarId = "avtr_id_for_test";
@@ -66,7 +66,7 @@ public class OscAvatarTests
         Assert.IsTrue(true);
     }
 
-
+    [Test]
     public void TestToWaitforSeconds()
     {
         const string AvatarId = "avtr_id_for_test";
