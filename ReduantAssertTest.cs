@@ -4,7 +4,7 @@ using NUnit.Framework;
 namespace BuildSoft.VRChat.Osc.Avatar.Test;
 
 [TestOf(typeof(OscAvatar))]
-public class OscAvatarTests
+public class ExampleVRUnitTest
 {
     [SetUp]
     public void Setup()
