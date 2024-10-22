@@ -75,6 +75,20 @@ public class OscAvatarTests
     }
 
     [Test]
+    public void TestVRObjectToString()
+    {
+        var vrObject = new VRObject
+        {
+            Name = "TestObject",
+            PositionX = 0,
+            PositionY = 1,
+            PositionZ = 2
+        };
+        string result = vrObject.ToString();
+        Assert.AreEqual("VRObject: TestObject, Position: (0, 1, 2)", result);
+    }
+
+    [Test]
     public void TestToWaitforSeconds()
     {
         const string AvatarId = "avtr_id_for_test";
