@@ -106,6 +106,20 @@ public class OscAvatarTests
         Assert.IsTrue(true);
     }
 
+    [Test]
+    public void ExampleVRUnitTestSimplePasses()
+    {
+        // This is a placeholder test method, doing nothing
+        Assert.Pass();
+    }
+
+    [UnityTest]
+    public IEnumerator ExampleVRUnitTestWithEnumeratorPasses()
+    {
+        // This is another placeholder test method that uses IEnumerator
+        yield return null;
+    }
+
 
 
     [Test]
