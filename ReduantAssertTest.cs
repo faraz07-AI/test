@@ -47,6 +47,14 @@ public class OscAvatarTests
         Console.WriteLine("result is : " + mipWidth)
         Assert.IsTrue(true);
     }
+    
+    [Test]
+    [Ignore("This test is ignored because of bug XYZ-123")]
+    public void TestMethodThatIsIgnored()
+    {
+        int result = MyMethod();
+        Assert.AreEqual(5, result);
+    }
 
     [Test]
     public void TaskDelayTest()
