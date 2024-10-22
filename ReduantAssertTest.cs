@@ -75,6 +75,18 @@ public class ExampleVRUnitTest
     }
 
     [Test]
+    public void TestVRObjectProperties()
+    {
+        // Arrange
+        var vrObject = new VRObject { Name = "VRObj", PositionX = 10.0f, PositionY = 15.0f };
+
+        // Act & Assert
+        Assert.AreEqual(10.0f, vrObject.PositionX);  // First assertion
+        Assert.AreEqual(15.0f, vrObject.PositionY);  // Another assertion
+        Assert.AreEqual(10.0f, vrObject.PositionX);  // Duplicate assertion
+    }
+
+    [Test]
     public void TestVRObjectToString()
     {
         var vrObject = new VRObject
