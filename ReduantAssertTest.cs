@@ -83,7 +83,7 @@ public class ExampleVRUnitTest
         // Act & Assert
         Assert.AreEqual(10.0f, vrObject.PositionX);  // First assertion
         Assert.AreEqual(15.0f, vrObject.PositionY);  // Another assertion
-        Assert.AreEqual(10.0f, vrObject.PositionX);  // Duplicate assertion
+        //Assert.AreEqual(10.0f, vrObject.PositionX);  // Duplicate assertion
     }
 
     [Test]
