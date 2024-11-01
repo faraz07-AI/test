@@ -48,7 +48,7 @@ public class ExampleVRUnitTest
         Assert.IsTrue(true);
     }
     
-    [Test]
+    [TestMethod]
     [Ignore("This test is ignored because of bug XYZ-123")]
     public void TestMethodThatIsIgnored()
     {
