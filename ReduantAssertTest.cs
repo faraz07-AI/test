@@ -63,6 +63,11 @@ public class ExampleVRUnitTest
     }
 
     [Test]
+    public void SqlServer_BaseStationDatabase_DeleteAircraft_Throws_If_Writes_Disabled(){
+        BaseStationDatabase_DeleteAircraft_Throws_If_Writes_Disabled();
+    }
+
+    [Test]
     public void TaskDelayTest()
     {
         const string AvatarId = "avtr_id_for_test";
