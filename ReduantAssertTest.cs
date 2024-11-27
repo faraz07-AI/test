@@ -68,6 +68,19 @@ public class ExampleVRUnitTest
     }
 
     [Test]
+    public void EmptyUsernameInConstructor()
+    {
+        string baseUri = "http://sonarqube.test.de/";
+        string username = "";
+        string password = "password";
+
+        SqAuthValidationUriBuilder uri = new SqAuthValidationUriBuilder(baseUri, username, password);
+
+        string expectedBaseUri = "http://sonarqube.test.de/api/authentication/validate";
+        Assert.AreEqual(expectedBaseUri, uri.GetSqUri().ToString());
+    }
+
+    [Test]
     public void TaskDelayTest()
     {
         const string AvatarId = "avtr_id_for_test";
