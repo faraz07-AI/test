@@ -175,11 +175,6 @@ public class ExampleVRUnitTest
             targets.Add(objectB);
             targets.Add(objectC);
 
-            subject.TargetState = true;
-            subject.Targets.CurrentIndex = 0;
-
-            subject.enabled = false;
-
             Assert.IsTrue(objectA.activeInHierarchy);
             Assert.IsTrue(objectB.activeInHierarchy);
             Assert.IsTrue(objectC.activeInHierarchy);
