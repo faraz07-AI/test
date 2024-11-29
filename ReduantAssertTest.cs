@@ -190,6 +190,38 @@ public class ExampleVRUnitTest
             Object.DestroyImmediate(objectC);
     }
 
+    [UnityTest]
+    public IEnumerator SwitchInactivet()
+        {
+            GameObject objectA = new GameObject("GameObjectStateSwitcherTest");
+            GameObject objectB = new GameObject("GameObjectStateSwitcherTest");
+            GameObject objectC = new GameObject("GameObjectStateSwitcherTest");
+
+            GameObjectObservableList targets = containingObject.AddComponent<GameObjectObservableList>();
+            yield return null;
+            subject.Targets = targets;
+
+            targets.Add(objectA);
+            targets.Add(objectB);
+            targets.Add(objectC);
+
+            Assert.IsTrue(objectA.activeInHierarchy);
+            Assert.IsTrue(objectA.activeInHierarchy);
+            Assert.IsTrue(objectB.activeInHierarchy);
+            Assert.IsTrue(objectC.activeInHierarchy);
+        
+            subject.SwitchNext();
+
+            Assert.IsTrue(objectA.activeInHierarchy);
+            Assert.IsTrue(objectA.activeInHierarchy);
+            Assert.IsTrue(objectB.activeInHierarchy);
+            Assert.IsTrue(objectC.activeInHierarchy);
+
+            Object.DestroyImmediate(objectA);
+            Object.DestroyImmediate(objectB);
+            Object.DestroyImmediate(objectC);
+    }
+
     
 
     [TestMethod]
