@@ -160,6 +160,40 @@ public class ExampleVRUnitTest
     public void ReportRows_DateReport_Returns_Aircraft_From_FetchRows(){
         Do_ReportRows_Report_Returns_Aircraft_From_FetchRows("date", ReportJsonClass.Flight);
     }
+    [UnityTest]
+    public IEnumerator SwitchInactiveComponent()
+        {
+            GameObject objectA = new GameObject("GameObjectStateSwitcherTest");
+            GameObject objectB = new GameObject("GameObjectStateSwitcherTest");
+            GameObject objectC = new GameObject("GameObjectStateSwitcherTest");
+
+            GameObjectObservableList targets = containingObject.AddComponent<GameObjectObservableList>();
+            yield return null;
+            subject.Targets = targets;
+
+            targets.Add(objectA);
+            targets.Add(objectB);
+            targets.Add(objectC);
+
+            subject.TargetState = true;
+            subject.Targets.CurrentIndex = 0;
+
+            subject.enabled = false;
+
+            Assert.IsTrue(objectA.activeInHierarchy);
+            Assert.IsTrue(objectB.activeInHierarchy);
+            Assert.IsTrue(objectC.activeInHierarchy);
+
+            subject.SwitchNext();
+
+            Assert.IsTrue(objectA.activeInHierarchy);
+            Assert.IsTrue(objectB.activeInHierarchy);
+            Assert.IsTrue(objectC.activeInHierarchy);
+
+            Object.DestroyImmediate(objectA);
+            Object.DestroyImmediate(objectB);
+            Object.DestroyImmediate(objectC);
+    }
 
     
 
