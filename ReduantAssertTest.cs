@@ -62,6 +62,13 @@ public class ExampleVRUnitTest
     
     }
 
+     [TestMethod]
+    public void SQLite_BaseStationDatabase_InsertSystemEvents_Works_For_Different_Cultures()
+    {
+        BaseStationDatabase_InsertSystemEvents_Works_For_Different_Cultures();
+    }
+    #endregion
+
     [Test]
     public void SqlServer_BaseStationDatabase_DeleteAircraft_Throws_If_Writes_Disabled(){
         BaseStationDatabase_DeleteAircraft_Throws_If_Writes_Disabled();
