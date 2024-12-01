@@ -163,6 +163,37 @@ public class ExampleVRUnitTest
         yield return null;
     }
 
+     [UnityTest, Order(5), Description("Change both audio sliders' values multiple times independently, then their audio sources' volumes must match")]
+     public IEnumerator WhenChangeSliderValuesIndependentlyMultipleTimes_ThenBothAudioSourcesVolumeLevelsMatch()
+     {
+            float[] expectedMusicVolumeLevels = { 0f,  0.25f, 1/3f, 0.5f, 2/3f, 0.75f, 1f };
+            float[] expectedFxVolumeLevels = expectedMusicVolumeLevels.Reverse().ToArray();
+
+            for (int i = 0; i < expectedMusicVolumeLevels.Length; i++)
+            {
+                var expectedMusicVolume = expectedMusicVolumeLevels[i];
+                var expectedFxVolume = expectedFxVolumeLevels[i];
+                
+                // Set slider value
+                _musicAudioSliderComponent.value = expectedMusicVolume;
+                _fxAudioSliderComponent.value = expectedFxVolume;
+        
+                yield return null;
+                
+                Assert.AreEqual(expectedMusicVolume, _musicAudioSliderComponent.value, 0.0, 
+                    $"After setting music slider value, unexpected slider '{MusicSliderName}' value");
+                
+                Assert.AreEqual(expectedMusicVolume, _musicAudioSourceComponent.volume, 0.0, 
+                    $"After setting music slider value, unexpected audio source '{MusicAudioSourceName}' volume");
+                
+                Assert.AreEqual(expectedFxVolume, _fxAudioSliderComponent.value, 0.0, 
+                    $"After setting FX slider value, unexpected slider '{FxSliderName}' value");
+                
+                Assert.AreEqual(expectedFxVolume, _fxAudioSourceComponent.volume, 0.0, 
+                    $"After setting FX slider value, unexpected audio source '{FxAudioSourceName}' volume");
+            }
+    }
+
     [Test]
     public void ReportRows_DateReport_Returns_Aircraft_From_FetchRows(){
         Do_ReportRows_Report_Returns_Aircraft_From_FetchRows("date", ReportJsonClass.Flight);
