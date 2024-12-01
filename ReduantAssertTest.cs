@@ -62,7 +62,7 @@ public class ExampleVRUnitTest
     
     }
 
-     [TestMethod]
+    [TestMethod]
     public void SQLite_BaseStationDatabase_InsertSystemEvents_Works_For_Different_Cultures()
     {
         BaseStationDatabase_InsertSystemEvents_Works_For_Different_Cultures();
