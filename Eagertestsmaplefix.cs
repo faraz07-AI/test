@@ -70,5 +70,29 @@ namespace Test.VirtualRadar.Interface
             Assert.IsTrue(defaultFileSystem.Exists(RelativeFilePath));
             yield break;
         }
+
+        [Test]
+        public void CastPointsInsufficientBeamLength()
+        {
+            Vector3EqualityComparer comparer = new Vector3EqualityComparer(0.1f);
+            UnityEventListenerMock castResultsChangedMock = new UnityEventListenerMock();
+            subject.ResultsChanged.AddListener(castResultsChangedMock.Listen);
+            subject.Origin = subject.gameObject;
+
+            validSurface.transform.position = Vector3.forward * 5f;
+            subject.MaximumLength = validSurface.transform.position.z / 2f;
+
+            subject.ManualOnEnable();
+            Physics.Simulate(Time.fixedDeltaTime);
+            subject.Process();
+
+            Vector3 expectedStart = Vector3.zero;
+            Vector3 expectedEnd = Vector3.forward * subject.MaximumLength;
+
+            Assert.That(subject.Points[0], Is.EqualTo(expectedStart).Using(comparer));
+            Assert.That(subject.Points[1], Is.EqualTo(expectedEnd).Using(comparer));
+            Assert.IsFalse(subject.TargetHit.HasValue);
+            Assert.IsTrue(castResultsChangedMock.Received);
+        }
       }
 }
