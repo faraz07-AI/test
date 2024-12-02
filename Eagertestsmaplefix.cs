@@ -57,6 +57,18 @@ namespace Test.VirtualRadar.Interface
             Assert.That(target.transform.eulerAngles, Is.EqualTo(input * 2f).Using(comparer));
 
             Object.DestroyImmediate(target);
-        }       
+        }
+        
+        [Test]
+        public IEnumerator Exists()
+        {
+            // Given a file in a relative path.
+            // When checking if the file exits.
+            // Then assert that the file exits.
+            Assert.IsFalse(string.IsNullOrEmpty(RelativeFilePath));
+            Assert.IsFalse(Path.IsPathRooted(RelativeFilePath));
+            Assert.IsTrue(defaultFileSystem.Exists(RelativeFilePath));
+            yield break;
+        }
       }
 }
