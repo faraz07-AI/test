@@ -34,5 +34,29 @@ namespace Test.VirtualRadar.Interface
             Assert.AreEqual(obj1.GetHashCode(), obj2.GetHashCode());
         }
         #endregion
+
+        [Test]
+        public void IncrementPropertyGlobal()
+        {
+            Vector3EqualityComparer comparer = new Vector3EqualityComparer(0.1f);
+            GameObject target = new GameObject("TransformEulerRotationMutatorTest");
+
+            subject.Target = target;
+            subject.UseLocalValues = false;
+            subject.MutateOnAxis = Vector3State.True;
+
+            Assert.That(target.transform.eulerAngles, Is.EqualTo(Vector3.zero).Using(comparer));
+
+            Vector3 input = new Vector3(10f, 20f, 30f);
+            subject.IncrementProperty(input);
+
+            Assert.That(target.transform.eulerAngles, Is.EqualTo(input).Using(comparer));
+
+            subject.IncrementProperty(input);
+
+            Assert.That(target.transform.eulerAngles, Is.EqualTo(input * 2f).Using(comparer));
+
+            Object.DestroyImmediate(target);
+        }       
       }
 }
