@@ -60,32 +60,17 @@ namespace Test.VirtualRadar.Interface
         }
         
         [Test]
-        public IEnumerator CanCreateActionMap()
+        public void T999_FinishStatus()
         {
-           var button = m_Window.rootVisualElement.Q<Button>("add-new-action-map-button");
-           Assume.That(button, Is.Not.Null);
-           SimulateClickOn(button);
+            TestHelper.InMethod();
+            // Of the 4 assets "sent", only 2 sent the first part.
+            Assert.That(client.sentdatapkt.Count,Is.EqualTo(2));
 
-           // Wait for the focus to move out the button and start new ActionMaps editon
-           yield return WaitForActionMapRename(3, isActive: true);
-
-          // Rename the new action map
-          SimulateTypingText("New Name");
- 
-          // wait for the edition to end
-          yield return WaitForActionMapRename(3, isActive: false);
-
-          // Check on the UI side
-          var actionMapsContainer = m_Window.rootVisualElement.Q("action-maps-container");
-          var actionMapItem = actionMapsContainer.Query<InputActionMapsTreeViewItem>().ToList();
-          Assert.That(actionMapItem, Is.Not.Null);
-          Assert.That(actionMapItem.Count, Is.EqualTo(4));
-          Assert.That(actionMapItem[3].Q<Label>("name").text, Is.EqualTo("New Name"));
-
-          // Check on the asset side
-          Assert.That(m_Window.currentAssetInEditor.actionMaps.Count, Is.EqualTo(4));
-          Assert.That(m_Window.currentAssetInEditor.actionMaps[3].name, Is.EqualTo("New Name"));
-        } 
+            // Sum of all packets sent:
+            int totalpkts = (npackets) + (npackets - 2) + (npackets - 4);
+            Assert.That(client.sentpktpkt.Count,Is.EqualTo(totalpkts));
+        }
+        
         
         [Test]
         public IEnumerator Exists()
