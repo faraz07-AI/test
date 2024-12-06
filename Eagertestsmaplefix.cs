@@ -94,5 +94,33 @@ namespace Test.VirtualRadar.Interface
             Assert.IsFalse(subject.TargetHit.HasValue);
             Assert.IsTrue(castResultsChangedMock.Received);
         }
-      }
+
+      [UnityTest]
+      public IEnumerator CanCreateActionMap()
+      {
+        var button = m_Window.rootVisualElement.Q<Button>("add-new-action-map-button");
+        Assume.That(button, Is.Not.Null);
+        SimulateClickOn(button);
+
+        // Wait for the focus to move out the button and start new ActionMaps editon
+        yield return WaitForActionMapRename(3, isActive: true);
+
+        // Rename the new action map
+        SimulateTypingText("New Name");
+
+        // wait for the edition to end
+        yield return WaitForActionMapRename(3, isActive: false);
+
+        // Check on the UI side
+        var actionMapsContainer = m_Window.rootVisualElement.Q("action-maps-container");
+        var actionMapItem = actionMapsContainer.Query<InputActionMapsTreeViewItem>().ToList();
+        Assert.That(actionMapItem, Is.Not.Null);
+        Assert.That(actionMapItem.Count, Is.EqualTo(4));
+        Assert.That(actionMapItem[3].Q<Label>("name").text, Is.EqualTo("New Name"));
+
+        // Check on the asset side
+        Assert.That(m_Window.currentAssetInEditor.actionMaps.Count, Is.EqualTo(4));
+        Assert.That(m_Window.currentAssetInEditor.actionMaps[3].name, Is.EqualTo("New Name"));
+      } 
+    }
 }
