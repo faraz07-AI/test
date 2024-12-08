@@ -88,7 +88,7 @@ Choose a test smell option (e.g., Assert Roulette) to analyze the repositories.
 View the results in the generated CSV file.
 
 Contributors
-Foyzul Hassan
-Faraz Gurramkonda
-Dhia Elhaq Rzig
+Foyzul Hassan, 
+Faraz Gurramkonda, 
+Dhia Elhaq Rzig, 
 clonedSemicolon
