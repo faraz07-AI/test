@@ -335,5 +335,92 @@ namespace Test.Zinnia.Tracking.Velocity
             Assert.That(actualResult, Is.EqualTo(expectedResult).Using(comparer));
             Assert.That(actualResult, Is.Not.EqualTo(unexpectedResult).Using(comparer));
         }
+
+        [Test]
+        [Category("Utilities")]
+        public void Utilities_CanParseNameAndParameterList()
+        {
+           Assert.That(NameAndParameters.Parse("name()").name, Is.EqualTo("name"));
+           Assert.That(NameAndParameters.Parse("name()").parameters, Is.Empty);
+           Assert.That(NameAndParameters.Parse("name").name, Is.EqualTo("name"));
+           Assert.That(NameAndParameters.Parse("name").parameters, Is.Empty);
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").name, Is.EqualTo("Name"));
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").parameters, Has.Count.EqualTo(3));
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").parameters[0].name, Is.EqualTo("foo"));
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").parameters[1].name, Is.EqualTo("Bar"));
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").parameters[2].name, Is.EqualTo("blub"));
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").parameters[0].type, Is.EqualTo(TypeCode.Boolean));
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").parameters[1].type, Is.EqualTo(TypeCode.Int64));
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").parameters[2].type, Is.EqualTo(TypeCode.Double));
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").parameters[0].value.ToBoolean(), Is.EqualTo(true));
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").parameters[1].value.ToInt64(), Is.EqualTo(123));
+           Assert.That(NameAndParameters.Parse("Name(foo,Bar=123,blub=234.56)").parameters[2].value.ToDouble(), Is.EqualTo(234.56).Within(0.0001));
+       }
+        #region Constructors and Properties
+        [TestMethod]
+        public void WebSite_Constructor_Initialises_To_Known_State_And_Properties_Work()
+        {
+            _WebSite = Factory.Resolve<IWebSite>();
+            Assert.IsNull(_WebSite.WebServer);
+            TestUtilities.TestProperty(_WebSite, "BaseStationDatabase", null, _BaseStationDatabase.Object);
+            TestUtilities.TestProperty(_WebSite, "StandingDataManager", null, _StandingDataManager.Object);
+        }
+        
+        [Test]
+        public void StandardEmission()
+        {
+            var wrapper = TestUtils.LoadMaterialWrapper("Standard_Emission.mat");
+            Assert.AreEqual(typeof(StandardMaterial), wrapper.GetType());
+            var setting = new ToonLitConvertSettings
+            {
+                mainTextureBrightness = 1.0f,
+            };
+            using (var tex = DisposableObject.New(wrapper.GenerateToonLitImage(setting)))
+            using (var main = DisposableObject.New(TestUtils.LoadUncompressedTexture("albedo_1024px_png.png")))
+            using (var emission = DisposableObject.New(TestUtils.LoadUncompressedTexture("emission_1024px.png")))
+            using (var composed = DisposableObject.New(new Texture2D(main.Object.width, main.Object.height)))
+            {
+                var mainPixels = main.Object.GetPixels32();
+                var emissionPixels = emission.Object.GetPixels32();
+                var compose = mainPixels.Select((p, i) =>
+                {
+                    var e = emissionPixels[i];
+                    var r = (byte)System.Math.Min(p.r + e.r, 255);
+                    var g = (byte)System.Math.Min(p.g + e.g, 255);
+                    var b = (byte)System.Math.Min(p.b + e.b, 255);
+                    var a = (byte)System.Math.Min(p.a + e.a, 255);
+                    return new Color32(r, g, b, a);
+                }).ToArray();
+                composed.Object.SetPixels32(compose);
+                Assert.Less(TestUtils.MaxDifference(tex.Object, composed.Object), Threshold);
+            }
+        }
+
+       [TestMethod]
+        public void SQLite_BaseStationDatabase_FileIsEmpty_Returns_True_If_The_File_Is_Empty()
+        {
+            _FileSystem.AddFile(@"c:\tmp\file.sqb", new byte[0]);
+            _Database.FileName = @"c:\tmp\file.sqb";
+
+            Assert.IsTrue(_Database.FileIsEmpty());
+        }
+        
+        [TestMethod]
+        public void PictureDetail_Equals_Returns_True_When_Comparing_Identical_Objects()
+        {
+            var aircraft = new PictureDetail();
+            Assert.AreEqual(true, aircraft.Equals(aircraft));
+        }
+
+         #region RemoveIndex
+        [TestMethod]
+        [ExpectedException(typeof(NotImplementedException))]
+        public void NotifyList_RemoveIndex_Is_Not_Implemented()
+        {
+            _ObservableList.RemoveIndex(_ObservableValueDescriptor);
+        }
+        #endregion
+
+         
     }
 }
