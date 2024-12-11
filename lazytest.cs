@@ -1,5 +1,6 @@
 using Zinnia.Tracking.Velocity;
 using Zinnia.Tracking.Velocity.Collection;
+using UnityEngine.InputSystem;
 
 namespace Test.Zinnia.Tracking.Velocity
 {
@@ -420,6 +421,61 @@ namespace Test.Zinnia.Tracking.Velocity
             _ObservableList.RemoveIndex(_ObservableValueDescriptor);
         }
         #endregion
+
+        [Test]
+        [Category("Actions")]
+        public void Actions_WithMultipleBoundControls_CanHandleButtonPressesAndReleases()
+        {
+           InputSystem.settings.defaultButtonPressPoint = 0.5f;
+  
+           var gamepad = InputSystem.AddDevice<Gamepad>();
+
+           var action = new InputAction(binding: "<Gamepad>/*trigger");
+           action.Enable();
+
+           Assert.That(action.IsPressed(), Is.False);
+           Assert.That(action.WasPressedThisFrame(), Is.False);
+           Assert.That(action.WasPerformedThisFrame(), Is.False);
+           Assert.That(action.WasReleasedThisFrame(), Is.False);
+           Assert.That(action.WasCompletedThisFrame(), Is.False);
+           Assert.That(action.activeControl, Is.Null);
+
+           Set(gamepad.leftTrigger, 1f);
+
+           Assert.That(action.IsPressed(), Is.True);
+           Assert.That(action.WasPressedThisFrame(), Is.True);
+           Assert.That(action.WasPerformedThisFrame(), Is.True);
+           Assert.That(action.WasReleasedThisFrame(), Is.False);
+           Assert.That(action.WasCompletedThisFrame(), Is.False);
+           Assert.That(action.activeControl, Is.SameAs(gamepad.leftTrigger));
+
+           Set(gamepad.rightTrigger, 0.6f);
+
+           Assert.That(action.IsPressed(), Is.True);
+           Assert.That(action.WasPressedThisFrame(), Is.False);
+           Assert.That(action.WasPerformedThisFrame(), Is.False);
+           Assert.That(action.WasReleasedThisFrame(), Is.False);
+           Assert.That(action.WasCompletedThisFrame(), Is.False);
+           Assert.That(action.activeControl, Is.SameAs(gamepad.leftTrigger));
+
+           Set(gamepad.leftTrigger, 0f);
+
+           Assert.That(action.IsPressed(), Is.True);
+           Assert.That(action.WasPressedThisFrame(), Is.False);
+           Assert.That(action.WasPerformedThisFrame(), Is.True);
+           Assert.That(action.WasReleasedThisFrame(), Is.False);
+           Assert.That(action.WasCompletedThisFrame(), Is.False);
+           Assert.That(action.activeControl, Is.SameAs(gamepad.rightTrigger));
+
+           Set(gamepad.rightTrigger, 0f);
+
+           Assert.That(action.IsPressed(), Is.False);
+           Assert.That(action.WasPressedThisFrame(), Is.False);
+           Assert.That(action.WasPerformedThisFrame(), Is.False);
+           Assert.That(action.WasReleasedThisFrame(), Is.True);
+           Assert.That(action.WasCompletedThisFrame(), Is.False);
+           Assert.That(action.activeControl, Is.Null);
+       }
 
          
     }
