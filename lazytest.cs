@@ -524,4 +524,18 @@ namespace Test.Zinnia.Tracking.Velocity
             Assert.IsTrue(siteRoot.Checksums.Count > 0);
         }
         #endregion
+        [TestMethod]
+        public void RawMessageTranslator_Translate_Extracts_Squawk_From_ModeS_Messages()
+        {
+            _Translator.Translate(_NowUtc, _ModeSMessage, null);
+            foreach(var modeSMessage in CreateModeSMessagesWithSquawks()) {
+                modeSMessage.Icao24 = _ModeSMessage.Icao24;
+                modeSMessage.Identity = (short)1234;
+
+                var message = _Translator.Translate(_NowUtc, modeSMessage, null);
+
+                Assert.AreEqual((short)1234, message.Squawk);
+                Assert.IsNull(message.Supplementary);
+            }
+        }
 }
