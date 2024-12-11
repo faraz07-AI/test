@@ -504,4 +504,24 @@ namespace Test.Zinnia.Tracking.Velocity
            Assert.That(m_Window.currentAssetInEditor.actionMaps[0].name, Is.EqualTo("First Name"));
            Assert.That(m_Window.currentAssetInEditor.actionMaps[1].name, Is.EqualTo("Third Name"));
          }
+         
+           [TestMethod]
+        public void WebSite_AttachSiteToServer_Allows_Default_File_System_Site_Pages_To_Be_Served()
+        {
+            SiteRoot siteRoot = null;
+            _FileSystemServerConfiguration.Setup(r => r.AddSiteRoot(It.IsAny<SiteRoot>())).Callback((SiteRoot s) => {
+                siteRoot = s;
+            });
+
+            _WebSite.AttachSiteToServer(_WebServer.Object);
+
+            var runtime = Factory.ResolveSingleton<IRuntimeEnvironment>();
+            var expectedFolder = String.Format("{0}{1}", Path.Combine(runtime.ExecutablePath, "Web"), Path.DirectorySeparatorChar);
+
+            Assert.IsNotNull(siteRoot);
+            Assert.AreEqual(0, siteRoot.Priority);
+            Assert.AreEqual(expectedFolder, siteRoot.Folder);
+            Assert.IsTrue(siteRoot.Checksums.Count > 0);
+        }
+        #endregion
 }
