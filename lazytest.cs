@@ -538,4 +538,15 @@ namespace Test.Zinnia.Tracking.Velocity
                 Assert.IsNull(message.Supplementary);
             }
         }
+
+        [Test]
+        public void ClearContainer()
+        {
+            Assert.IsNull(subject.Container);
+            subject.Container = containingObject;
+            Assert.AreEqual(containingObject, subject.Container);
+            subject.ClearContainer();
+            Assert.IsNull(subject.Container);
+        }
+
 }
