@@ -477,6 +477,31 @@ namespace Test.Zinnia.Tracking.Velocity
            Assert.That(action.activeControl, Is.Null);
        }
 
-         
-    }
+         [UnityTest]
+         public IEnumerator CanDeleteActionMap()
+         {
+           var actionMapsContainer = m_Window.rootVisualElement.Q("action-maps-container");
+           var actionMapItem = actionMapsContainer.Query<InputActionMapsTreeViewItem>().ToList();
+           Assume.That(actionMapItem[1].Q<Label>("name").text, Is.EqualTo("Second Name"));
+
+           // Select the second element
+           SimulateClickOn(actionMapItem[1]);
+
+           yield return WaitForFocus(m_Window.rootVisualElement.Q("action-maps-list-view"));
+
+           SimulateDeleteCommand();
+
+           yield return WaitUntil(() => actionMapsContainer.Query<InputActionMapsTreeViewItem>().ToList().Count == 2, "wait for element to be deleted");
+
+           // Check on the UI side
+           actionMapItem = actionMapsContainer.Query<InputActionMapsTreeViewItem>().ToList();
+           Assert.That(actionMapItem.Count, Is.EqualTo(2));
+           Assert.That(actionMapItem[0].Q<Label>("name").text, Is.EqualTo("First Name"));
+           Assert.That(actionMapItem[1].Q<Label>("name").text, Is.EqualTo("Third Name"));
+
+           // Check on the asset side
+           Assert.That(m_Window.currentAssetInEditor.actionMaps.Count, Is.EqualTo(2));
+           Assert.That(m_Window.currentAssetInEditor.actionMaps[0].name, Is.EqualTo("First Name"));
+           Assert.That(m_Window.currentAssetInEditor.actionMaps[1].name, Is.EqualTo("Third Name"));
+         }
 }
