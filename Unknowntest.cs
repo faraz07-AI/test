@@ -6,29 +6,6 @@ namespace BuildSoft.VRChat.Osc.Avatar.Test;
 [TestOf(typeof(OscAvatar))]
 public class ExampleVRUnitTest
 {
-    [SetUp]
-    public void Setup()
-    {
-        TestUtility.StashOscDirectory();
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-        TestUtility.RestoreOscDirectory();
-    }
-
-    [OneTimeSetUp]
-    public void OneTimeSetUp()
-    {
-
-    }
-
-    [OneTimeTearDown]
-    public void OneTimeTearDown()
-    {
-
-    }
 
     [Test]
     public void ReportRows_DateReport_Returns_Aircraft_From_FetchRows(){
