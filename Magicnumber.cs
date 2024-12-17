@@ -32,7 +32,6 @@ public class ExampleVRUnitTest
             var actualValue = jsonProperty.GetValue(jsonAircraft, null);
 
             Assert.AreEqual(expectedValue, actualValue);
-            Assert.AreEqual(expectedValue, 1);
-            Assert.AreEqual(expectedValue, 2);
+            Assert.AreEqual(1, _Connector.Written.Count);
         }
      
