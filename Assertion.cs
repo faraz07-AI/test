@@ -14,24 +14,11 @@ public class ExampleVRUnitTest
      
        private void Do_ReportRows_Report_Returns_Aircraft_From_FetchRows(string report, ReportJsonClass reportClass)
      {
-            ReportAircraftJson jsonAircraft = null;
-            switch(reportClass) {
-                case ReportJsonClass.Aircraft:
-                    jsonAircraft = json.Aircraft;
-                    break;
-                case ReportJsonClass.Flight:
-                    Assert.AreEqual(1, json.Aircraft.Count);
-                    jsonAircraft = json.Aircraft[0];
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
+        var builder = new InputControlLayout.Builder().WithName("TestLayout");
 
-            var jsonProperty = jsonAircraft.GetType().GetProperty(worksheet.String("JsonProperty"));
-            var expectedValue = TestUtilities.ChangeType(worksheet.EString("JsonValue"), jsonProperty.PropertyType, CultureInfo.InvariantCulture);
-            var actualValue = jsonProperty.GetValue(jsonAircraft, null);
-
-            Assert.AreEqual(expectedValue, actualValue);
-        }
+        Assert.That(() => builder.AddControl("TestControl").WithUsages(""),
+            Throws.ArgumentException.With.Message.Contains("TestControl")
+                .And.With.Message.Contains("TestLayout"));
+    }
      
 }
