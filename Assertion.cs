@@ -14,11 +14,14 @@ public class ExampleVRUnitTest
      
        private void Do_ReportRows_Report_Returns_Aircraft_From_FetchRows(string report, ReportJsonClass reportClass)
      {
-        var builder = new InputControlLayout.Builder().WithName("TestLayout");
+        string baseUri = "http://sonarqube.test.de/";
+        string username = "";
+        string password = "password";
 
-        Assert.That(() => builder.AddControl("TestControl").WithUsages(""),
-            Throws.ArgumentException.With.Message.Contains("TestControl")
-                .And.With.Message.Contains("TestLayout"));
+        SqAuthValidationUriBuilder uri = new SqAuthValidationUriBuilder(baseUri, username, password);
+
+        string expectedBaseUri = "http://sonarqube.test.de/api/authentication/validate";
+        Assert.AreEqual(expectedBaseUri, uri.GetSqUri().ToString());
     }
      
 }
