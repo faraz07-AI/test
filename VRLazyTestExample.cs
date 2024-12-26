@@ -16,6 +16,22 @@ namespace VRLazyTestExample
         }
 
         [Test]
+        public void Test1()
+        {
+             var result = _vrTestObject.ReportRows_DateReport_Returns_Aircraft_From_FetchRows();
+             Assert.IsNotNull(result);
+        }
+
+        [Test]
+        public void Test2()
+        {
+             var result = _vrTestObject.ReportRows_DateReport_Returns_Aircraft_From_FetchRows();
+             Assert.AreEqual("Aircraft", result);
+        }
+
+
+
+        [Test]
         public void Test_ReportRows_RedundantCall()
         {
             // First redundant call to the same production method
