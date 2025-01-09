@@ -101,6 +101,302 @@ public class ExampleVRUnitTest
             Assert.IsFalse(block.FindItem(ray, 0.2f).HasValue);
         }
 
+        [Test]
+        public void ClearLeftController()
+        {
+            Assert.IsNull(subject.LeftController);
+            subject.LeftController = containingObject;
+            Assert.AreEqual(containingObject, subject.LeftController);
+            subject.ClearLeftController();
+            Assert.IsNull(subject.LeftController);
+        }
+
+        
+        [Test]
+        public void BoolValueInactiveGameObject()
+        {
+            subject.Timeline = animator;
+            subject.ParameterName = "BoolTest";
+            subject.gameObject.SetActive(false);
+            Assert.IsFalse(animator.GetBool("BoolTest"));
+
+            subject.BoolValue = true;
+
+            Assert.IsFalse(animator.GetBool("BoolTest"));
+            Assert.IsFalse(subject.BoolValue);
+        }
+
+        
+        
+        [UnityTest]
+        public IEnumerator MissingSurfaceDueToLocatorTermination()
+        {
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
+
+            GameObject terminatingSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
+
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
+
+            terminatingSurface.transform.position = Vector3.forward * 5f;
+            terminatingSurface.AddComponent<RuleStub>();
+
+            AnyComponentTypeRule anyComponentTypeRule = terminatingSurface.AddComponent<AnyComponentTypeRule>();
+            SerializableTypeComponentObservableList rules = containingObject.AddComponent<SerializableTypeComponentObservableList>();
+            yield return null;
+
+            anyComponentTypeRule.ComponentTypes = rules;
+            rules.Add(typeof(RuleStub));
+
+            subject.LocatorTermination = new RuleContainer
+            {
+                Interface = anyComponentTypeRule
+            };
+
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
+
+            yield return waitForFixedUpdate;
+            subject.Locate();
+            yield return waitForFixedUpdate;
+            Assert.IsFalse(surfaceLocatedMock.Received);
+            Assert.IsNull(subject.surfaceData.Transform);
+
+            Object.DestroyImmediate(terminatingSurface);
+            Object.DestroyImmediate(searchOrigin);
+        }
+
+
+
+        
+        [TestMethod]
+        public void RebroadcastServerManager_ConfigurationChanged_Disposes_Of_Old_And_Creates_New_Server_If_Format_Changes()
+        {
+            _Manager.Initialise();
+
+            _RebroadcastSettings.Format = RebroadcastFormat.Port30003;
+            _ConfigurationStorage.Raise(r => r.ConfigurationChanged += null, EventArgs.Empty);
+
+            Assert.AreEqual(1, _Manager.RebroadcastServers.Count);
+            Assert.AreEqual(RebroadcastFormat.Port30003, _Server.Object.Format);
+            _Server.Verify(r => r.Dispose(), Times.Once());
+            _Connector.Verify(r => r.Dispose(), Times.Once());
+        }
+
+
+         
+        [Test]
+        public void FindSelectableOnLeft_ReturnsNextSelectableLeftOfTarget()
+        {
+            Selectable selectableLeftOfTopRight = topRightSelectable.FindSelectableOnLeft();
+            Selectable selectableLeftOfBottomRight = bottomRightSelectable.FindSelectableOnLeft();
+
+            Assert.AreEqual(topLeftSelectable, selectableLeftOfTopRight, "Wrong selectable to left of Top Right Selectable");
+            Assert.AreEqual(bottomLeftSelectable, selectableLeftOfBottomRight, "Wrong selectable to left of Bottom Right Selectable");
+        }
+
+        
+
+       
+        [Test]
+        public void Read_OrCondition()
+        {
+            OrConditionDto orConditionDto = new OrConditionDto()
+            {
+                ConditionA = new MagnitudeConditionDto() { Magnitude = 12, BoneOrigin = 53, TargetNodeId = 15 },
+                ConditionB = new ScaleConditionDto() { Scale = Vector3.one.Dto() }
+            };
+
+            poseConditionSerializerModule.Write(orConditionDto, out Bytable data);
+
+            ByteContainer byteContainer = new ByteContainer(0, 1, data.ToBytes());
+
+            poseConditionSerializerModule.Read(byteContainer, out bool readable, out AbstractPoseConditionDto result);
+            Assert.IsTrue(readable);
+            Assert.IsNotNull(result);
+            Assert.AreEqual(((result as OrConditionDto).ConditionA as MagnitudeConditionDto).Magnitude, (orConditionDto.ConditionA as MagnitudeConditionDto).Magnitude);
+            Assert.AreEqual(((result as OrConditionDto).ConditionB as ScaleConditionDto).Scale.X, (orConditionDto.ConditionB as ScaleConditionDto).Scale.X);
+        }
+
+
+	[Test]
+        public void Clear()
+        {
+            _tree.Clear();
+            Assert.AreEqual(ChildrenCount, _tree.Children.Count());
+            Assert.AreEqual(0, _tree.Points.Connections.Count());
+            Assert.AreEqual(0, _tree.Points.Count());
+        }
+
+
+        [Test]
+        public void BoolValueInactiveGameObject()
+        {
+            subject.Timeline = animator;
+            subject.ParameterName = "BoolTest";
+            subject.gameObject.SetActive(false);
+            Assert.IsFalse(animator.GetBool("BoolTest"));
+
+            subject.BoolValue = true;
+
+            Assert.IsFalse(animator.GetBool("BoolTest"));
+            Assert.IsFalse(subject.BoolValue);
+        }
+
+        
+             [UnityTest]                                                                                                                                    
+     public IEnumerator ValidSurfaceDueToTargetPointValidity()                                                                                      
+     {                                                                                                                                              
+ UNITY_2022_2_OR_NEWER                                                                                                                              
+         Physics.simulationMode = SimulationMode.FixedUpdate;                                                                                       
+se                                                                                                                                                  
+         Physics.autoSimulation = true;                                                                                                             
+dif                                                                                                                                                 
+                                                                                                                                                    
+         GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);                                                                  
+         GameObject searchOrigin = new GameObject("SearchOrigin");                                                                                  
+                                                                                                                                                    
+         UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();                                                                  
+         subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);                                                                             
+                                                                                                                                                    
+         validSurface.transform.position = Vector3.forward * 5f;                                                                                    
+         Vector3RuleStub vector3Point = validSurface.AddComponent<Vector3RuleStub>();                                                               
+         vector3Point.toMatch = validSurface.transform.position - (Vector3.forward * validSurface.transform.localScale.z * 0.5f);                   
+         yield return null;                                                                                                                         
+                                                                                                                                                    
+         subject.TargetPointValidity = new RuleContainer                                                                                            
+         {                                                                                                                                          
+             Interface = vector3Point                                                                                                               
+         };                                                                                                                                         
+                                                                                                                                                    
+         subject.SearchOrigin = searchOrigin;                                                                                                       
+         subject.SearchDirection = Vector3.forward;                                                                                                 
+                                                                                                                                                    
+         yield return waitForFixedUpdate;                                                                                                           
+         subject.Locate();                                                                                                                          
+         yield return waitForFixedUpdate;                                                                                                           
+         Assert.IsTrue(surfaceLocatedMock.Received);                                                                                                
+         Assert.AreEqual(validSurface.transform, subject.surfaceData.Transform);                                                                    
+                                                                                                                                                    
+         Object.DestroyImmediate(validSurface);                                                                                                     
+         Object.DestroyImmediate(searchOrigin);                                                                                                     
+     }                                                                                                                                              
+                                                                                                                                                    
+     [UnityTest]                                                                                                                                    
+     public IEnumerator MissingSurfaceDueToLocatorTermination()                                                                                     
+     {                                                                                                                                              
+ UNITY_2022_2_OR_NEWER                                                                                                                              
+         Physics.simulationMode = SimulationMode.FixedUpdate;                                                                                       
+se                                                                                                                                                  
+         Physics.autoSimulation = true;                                                                                                             
+dif                                                                                                                                                 
+                                                                                                                                                    
+         GameObject terminatingSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);                                                            
+         GameObject searchOrigin = new GameObject("SearchOrigin");                                                                                  
+                                                                                                                                                    
+         UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();                                                                  
+         subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);                                                                             
+                                                                                                                                                    
+         terminatingSurface.transform.position = Vector3.forward * 5f;                                                                              
+         terminatingSurface.AddComponent<RuleStub>();                                                                                               
+                                                                                                                                                    
+         AnyComponentTypeRule anyComponentTypeRule = terminatingSurface.AddComponent<AnyComponentTypeRule>();                                       
+         SerializableTypeComponentObservableList rules = containingObject.AddComponent<SerializableTypeComponentObservableList>();                  
+         yield return null;                                                                                                                         
+                                                                                                                                                    
+         anyComponentTypeRule.ComponentTypes = rules;                                                                                               
+         rules.Add(typeof(RuleStub));                                                                                                               
+                                                                                                                                                    
+         subject.LocatorTermination = new RuleContainer                                                                                             
+         {                                                                                                                                          
+             Interface = anyComponentTypeRule                                                                                                       
+         };                                                                                                                                         
+                                                                                                                                                    
+         subject.SearchOrigin = searchOrigin;                                                                                                       
+         subject.SearchDirection = Vector3.forward;                                                                                                 
+                                                                                                                                                    
+         yield return waitForFixedUpdate;                                                                                                           
+         subject.Locate();                                                                                                                          
+         yield return waitForFixedUpdate;                                                                                                           
+         Assert.IsFalse(surfaceLocatedMock.Received);                                                                                               
+         Assert.IsNull(subject.surfaceData.Transform);                                                                                              
+                                                                                                                                                    
+         Object.DestroyImmediate(terminatingSurface);                                                                                               
+         Object.DestroyImmediate(searchOrigin);                                                                                                     
+       }                                                                                                                                              
+                                                                                                                                                    
+        
+        [TestMethod]
+        public void RebroadcastServerManager_ConfigurationChanged_Disposes_Of_Old_And_Creates_New_Server_If_Format_Changes()
+        {
+            _Manager.Initialise();
+
+            _RebroadcastSettings.Format = RebroadcastFormat.Port30003;
+            _ConfigurationStorage.Raise(r => r.ConfigurationChanged += null, EventArgs.Empty);
+
+            Assert.AreEqual(1, _Manager.RebroadcastServers.Count);
+            Assert.AreEqual(RebroadcastFormat.Port30003, _Server.Object.Format);
+            _Server.Verify(r => r.Dispose(), Times.Once());
+            _Connector.Verify(r => r.Dispose(), Times.Once());
+        }
+      
+        [Test]
+        public static void TestUuid5()
+        {
+            // Test values computed using python uuid.uuid5
+            Assert.AreEqual(GuidUtils.Uuid5(Guid.Empty, "fancy"),
+                new Guid("f8893632-dedc-566d-83f1-afda8c3bbd31"));
+            Assert.AreEqual(GuidUtils.Uuid5(GuidUtils.kNamespaceDns, "fancy"),
+                new Guid("750c4490-5470-5f19-a5e9-98c1ce534c7e"));
+        }
+
+        
+        [TestMethod]
+        public void Listener_Connect_Moves_NonIcao24Address_To_Icao24_If_FineFormatTisB_With_Icao24_Address()
+        {
+            _Clock.UtcNowValue = new DateTime(2007, 8, 9, 10, 11, 12, 13);
+            _Connector.ConfigureForConnect();
+            _Connector.ConfigureForReadStream("a");
+            _BytesExtractor.AddExtractedBytes(ExtractedBytesFormat.ModeS, 7);
+
+            _ModeSMessage.DownlinkFormat = DownlinkFormat.ExtendedSquitterNonTransponder;
+            _ModeSMessage.ControlField = ControlField.FineFormatTisb;
+            _ModeSMessage.Icao24 = 0;
+            _ModeSMessage.NonIcao24Address = 0xABCDEF;
+
+            _AdsbMessage.TisbIcaoModeAFlag = 0;
+
+            ChangeSourceAndConnect();
+
+            Assert.AreEqual(0xABCDEF, _ModeSMessage.Icao24);
+            Assert.AreEqual(null, _ModeSMessage.NonIcao24Address);
+        }
+
+
+        
+        [Test]
+        public void ReceiveInactiveGameObject()
+        {
+            UnityEventListenerMock emittedMock = new UnityEventListenerMock();
+            subject.Emitted.AddListener(emittedMock.Listen);
+            subject.gameObject.SetActive(false);
+            SurfaceData payload = new SurfaceData();
+
+            Assert.IsNull(subject.Payload);
+            Assert.IsFalse(emittedMock.Received);
+
+            subject.Receive(payload);
+
+            Assert.IsNull(subject.Payload);
+            Assert.IsFalse(emittedMock.Received);
+        }
+
+        
        
         [Test]
         public void PopAtIndexMiddle()
