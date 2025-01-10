@@ -377,7 +377,15 @@ dif
             Assert.AreEqual(null, _ModeSMessage.NonIcao24Address);
         }
 
-
+        
+        [Test]
+        public void DefaultStateZAxis()
+        {
+            Vector3State actualResult = Vector3State.ZOnly;
+            Assert.IsFalse(actualResult.xState);
+            Assert.IsFalse(actualResult.yState);
+            Assert.IsTrue(actualResult.zState);
+        }
         
         [Test]
         public void ReceiveInactiveGameObject()
@@ -485,6 +493,116 @@ dif
             Object.DestroyImmediate(objectTwo);
             Object.DestroyImmediate(objectThree);
         }
+        
+
+       
+        [TestMethod]
+        public void ReportRows_RegistrationReport_Deals_With_Missing_Aircraft_Criteria_Correctly()
+        {
+            _ReportRowsAddress.Report = "reg";
+
+            var json = SendJsonRequest<AircraftReportJson>(_ReportRowsAddress.Address);
+
+            _BaseStationDatabase.Verify(db => db.GetAircraftByRegistration(It.IsAny<string>()), Times.Never());
+
+            Assert.AreEqual(0, json.CountRows);
+            Assert.AreEqual(0, json.Flights.Count);
+            Assert.AreEqual(0, json.Airports.Count);
+            Assert.AreEqual(0, json.Routes.Count);
+            Assert.IsTrue(json.Aircraft.IsUnknown);
+        }
+      
+ 
+       
+        [Test]
+        public void TestGetAngleBetween()
+        {
+            int kNumTests = 30;
+            int kNumOffsets = 5;
+            // Test doesn't do a good job of avoiding instability, so just crank this up
+            // in lieu of doing a more precise job (eg, by using the "stability" output)
+            float kEpsilon = 5e-2f;
+
+            for (int iTest = 0; iTest < kNumTests; ++iTest)
+            {
+                Vector3 axis = Random.onUnitSphere;
+                float angle = Random.Range(-179f, 179f);
+                // test too unstable; should write a better one if we need to test precision
+                if (angle < 1f) { continue; }
+                Quaternion q = Quaternion.AngleAxis(angle, axis);
+
+                Vector3 v0 = Random.onUnitSphere;
+                Vector3 v1 = q * v0;
+                for (int iOffset = 0; iOffset < kNumOffsets; ++iOffset)
+                {
+                    float stability;
+                    Vector3 v0p = v0 + Random.Range(-100f, 100f) * axis;
+                    Vector3 v1p = v1 + Random.Range(-100f, 100f) * axis;
+                    float result = MathUtils.GetAngleBetween(v0p, v1p, axis, out stability);
+                    Assert.AreEqual(angle, result, kEpsilon);
+                    result = MathUtils.GetAngleBetween(v1, v0, axis, out stability);
+                    Assert.AreEqual(angle, -result, kEpsilon);
+                }
+            }
+        }
+
+        const float kLeft = -1;
+        const float kRight = 2;
+        const float kBottom = -2;
+        const float kTop = 6;
+        const float kNear = 1;
+        const float kFar = 10;
+        static readonly Matrix4x4 kOffCenter = MathUtils.PerspectiveOffCenter(
+            kLeft, kRight, kBottom, kTop, kNear, kNear, kFar);
+        // Runs v through projection matrix, returns NDC
+        static Vector3 Project(float x, float y, float z)
+        {
+            // Note that by convention, perspective matrices are right-handed,
+            // with x = right, y = up, -z = forward
+            Vector4 clip = kOffCenter * new Vector4(x, y, z, 1);
+            var v = new Vector3(clip.x, clip.y, clip.z) / clip.w;
+            return v;
+        }
+
+
+	
+        [Test]
+        public void CastPointsDragEffectDensity()
+        {
+            subject.Origin = subject.gameObject;
+
+            validSurface.transform.position = Vector3.forward * 5f;
+
+            subject.ManualOnEnable();
+            Physics.Simulate(Time.fixedDeltaTime);
+            subject.Process();
+            Assert.AreEqual(2, subject.Points.Count);
+
+            subject.DragEffectDensity = 7;
+            subject.Process();
+            Assert.AreEqual(10, subject.Points.Count);
+        }
+
+
+       
+         public void RawMessageTranslator_Translate_Extracts_VerticalRate_From_ADSB_Messages()
+        {
+            foreach(var adsbMessage in CreateAdsbMessagesForExtendedSquitters()) {
+                foreach(var rateIsBarometric in new bool[] { true, false }) {
+                    var airborneVelocity = adsbMessage.AirborneVelocity = new AirborneVelocityMessage();
+                    airborneVelocity.VerticalRate = 100;
+                    airborneVelocity.VerticalRateIsBarometric = rateIsBarometric;
+
+                    var message = _Translator.Translate(_NowUtc, adsbMessage.ModeSMessage, adsbMessage);
+
+                    Assert.AreEqual(100, message.VerticalRate);
+                    if(rateIsBarometric) Assert.IsTrue(message.Supplementary.VerticalRateIsGeometric.GetValueOrDefault());
+                    else if(message.Supplementary != null) Assert.IsFalse(message.Supplementary.VerticalRateIsGeometric.GetValueOrDefault());
+                }
+            }
+        }
+        #endregion
+
 
 
         [Test]
