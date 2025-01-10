@@ -584,7 +584,7 @@ dif
         }
 
 
-       
+         [Test]
          public void RawMessageTranslator_Translate_Extracts_VerticalRate_From_ADSB_Messages()
         {
             foreach(var adsbMessage in CreateAdsbMessagesForExtendedSquitters()) {
