@@ -494,6 +494,23 @@ dif
             Object.DestroyImmediate(objectThree);
         }
         
+        [TestMethod]
+        public void RawMessageTranslator_Translate_Extracts_VerticalRate_From_ADSB_Messages()
+        {
+            foreach(var adsbMessage in CreateAdsbMessagesForExtendedSquitters()) {
+                foreach(var rateIsBarometric in new bool[] { true, false }) {
+                    var airborneVelocity = adsbMessage.AirborneVelocity = new AirborneVelocityMessage();
+                    airborneVelocity.VerticalRate = 100;
+                    airborneVelocity.VerticalRateIsBarometric = rateIsBarometric;
+
+                    var message = _Translator.Translate(_NowUtc, adsbMessage.ModeSMessage, adsbMessage);
+
+                    Assert.AreEqual(100, message.VerticalRate);
+                    if(rateIsBarometric) Assert.IsTrue(message.Supplementary.VerticalRateIsGeometric.GetValueOrDefault());
+                    else if(message.Supplementary != null) Assert.IsFalse(message.Supplementary.VerticalRateIsGeometric.GetValueOrDefault());
+                }
+            }
+        }
 
        
         [TestMethod]
