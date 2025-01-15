@@ -6,7 +6,6 @@ namespace VRLazyTestExample
 {
    
   public class MinHeapTest {
-
     private class HeapElement : IMinHeapNode, IComparable<HeapElement> {
         public int heapIndex { get; set; }
         public float value;
