@@ -4,9 +4,16 @@ using ExampleVRNamespace;
 
 namespace VRLazyTestExample
 {
-    public class VRLazyTests
-    {
-        private ExampleVRUnitTest _vrTestObject;
+   
+  public class MinHeapTest {
+
+    private class HeapElement : IMinHeapNode, IComparable<HeapElement> {
+        public int heapIndex { get; set; }
+        public float value;
+
+         public HeapElement(float value) {
+           this.value = value;
+         }
 
         [SetUp]
         public void SetUp()
