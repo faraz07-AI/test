@@ -20,7 +20,6 @@ namespace VRLazyTestExample
         {
             BaseStationDatabase_UpdateSession_Works_For_Dvifferent_Cultures(timeGetsRounded: true);
         }
-        #endregion
 
         
         [TestMethod]
@@ -55,7 +54,7 @@ namespace VRLazyTestExample
         }
 
 
-     [UnityTest, Order(5), Description("Change both audio sliders' values multiple times independently, then their audio sources' volumes must match")]
+     [UnityTest]
      public IEnumerator WhenChangeSliderValuesIndependentlyMultipleTimes_ThenBothAudioSourcesVolumeLevelsMatch()
      {
             float[] expectedMusicVolumeLevels = { 0f,  0.25f, 1/3f, 0.5f, 2/3f, 0.75f, 1f };
@@ -117,7 +116,7 @@ namespace VRLazyTestExample
             Assert.AreEqual((2 * 20 + 2) * 7, this.LineSketchObject.GetComponent<MeshFilter>().sharedMesh.vertices.Length);
         }
 
-        TestMethod]
+        [TestMethod]
         public void AdsbTranslator_Translate_Decodes_Target_State_Version_2_Autopilot_State_Flags_Correctly()
         {
             for(var valid = 0;valid < 2;++valid) {
@@ -204,7 +203,7 @@ namespace VRLazyTestExample
         }
 
         
-        #region ExceptionCaught
+
         [TestMethod]
         public void MergedFeedListener_ExceptionCaught_Raised_If_Exception_Thrown_By_BaseStation_Event_Handler()
         {
@@ -313,8 +312,7 @@ namespace VRLazyTestExample
         {
             BaseStationDatabase_InsertSystemEvents_Works_For_Different_Cultures();
         }
-        #endregion
-
+        
         [Test]
         public void TestBasics() {
             var thenull = CreateObject();
@@ -537,9 +535,9 @@ namespace VRLazyTestExample
             while (listWordsResponse == null)
                 yield return null;
         }
-        #endregion
+        
      
-           [Test]
+        [Test]
         public void TestEditorOnly()
         {
 #if VQT_HAS_VRCSDK
@@ -648,7 +646,7 @@ namespace VRLazyTestExample
         }
 
 
-         [Test]
+        [Test]
         public void ActivatedEmitted()
         {
             UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
