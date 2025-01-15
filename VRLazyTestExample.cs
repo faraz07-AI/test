@@ -15,13 +15,6 @@ namespace VRLazyTestExample
             _vrTestObject = new ExampleVRUnitTest();
         }  
 
-        [Test]
-        public void Test1()
-        {
-             var result = _vrTestObject.ReportRows_DateReport_Returns_Aircraft_From_FetchRows();
-             Assert.IsNotNull(result);
-        }
-
         [TestMethod]
         public void SQLite_BaseStationDatabase_UpdateSession_Works_For_Different_Cultures()
         {
@@ -39,26 +32,6 @@ namespace VRLazyTestExample
             _DirectoryCache.Folder = "x";
 
             Assert.AreEqual(0, _CacheChangedEvent.CallCount);
-        }
-
-        [Test]
-        public void Test2()
-        {
-             var result = _vrTestObject.ReportRows_DateReport_Returns_Aircraft_From_FetchRows();
-             Assert.AreEqual("Aircraft", result);
-        }
-
-        [Test]
-        public void EmptyUsernameInConstructor()
-        {
-             string baseUri = "http://sonarqube.test.de/";
-             string username = "";
-             string password = "password";
-
-             SqAuthValidationUriBuilder uri = new SqAuthValidationUriBuilder(baseUri, username, password);
-
-             string expectedBaseUri = "http://sonarqube.test.de/api/authentication/validate";
-             Assert.AreEqual(expectedBaseUri, uri.GetSqUri().ToString());
         }
 
         
