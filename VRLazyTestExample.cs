@@ -33,6 +33,21 @@ namespace VRLazyTestExample
             Assert.AreEqual(0, _CacheChangedEvent.CallCount);
         }
 
+        [UnityTest]
+        public IEnumerator CoordinateSystemsTestScriptsWithEnumeratorPasses()
+        {
+           // Use the Assert class to test conditions.
+           // yield to skip a frame
+           yield return null;
+        }
+     
+        [UnityTest]
+        public IEnumerator NewTestScriptWithEnumeratorPasses() {
+            // Use the Assert class to test conditions.
+            // yield to skip a frame
+            yield return null;
+         }
+
         
         [Test]
         public void ConstructFromInts()
