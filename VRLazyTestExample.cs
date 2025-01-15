@@ -58,6 +58,24 @@ namespace VRLazyTestExample
 	}
       // !!!END
 
+        [TestMethod]
+        public void AllComponentsTest()
+        {
+            Console.WriteLine("All Components Test Start");
+            NewTestWorld();
+            Console.WriteLine("Done Clreaing last Test");
+            var assem = Assembly.GetAssembly(typeof(Component));
+            var types =
+              from t in assem.GetTypes().AsParallel()
+              where t.IsAssignableTo(typeof(Component))
+              select t;
+            foreach (var item in types)
+            {
+                TestComponent(item);
+            }
+            //Parallel.ForEach(types, TestWorker);
+        }
+
         
         [Test]
         public void ConstructFromInts()
