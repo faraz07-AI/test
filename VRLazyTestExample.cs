@@ -40,6 +40,49 @@ namespace VRLazyTestExample
            Assert.Fail();
         }
    
+        [Test]
+        public void GlbLengthTest()
+        {
+            var env = System.Environment.GetEnvironmentVariable("GLTF_SAMPLE_MODELS");
+            if (string.IsNullOrEmpty(env))
+            {
+                return;
+            }
+            var root = new DirectoryInfo($"{env}/2.0");
+            if (!root.Exists)
+            {
+                return;
+            }
+
+            var path = Path.Combine(root.ToString(), "DamagedHelmet\\glTF-Binary\\DamagedHelmet.glb");
+            Assert.True(File.Exists(path));
+
+            var bytes = File.ReadAllBytes(path);
+            using (var data = new GlbBinaryParser(bytes, Path.GetFileNameWithoutExtension(path)).Parse())
+            {
+
+                // glb header + 1st chunk only
+                var mod = bytes.Take(12 + 8 + data.Chunks[0].Bytes.Count).ToArray();
+
+                Assert.Throws<GlbParseException>(() =>
+                {
+                // 再パース
+                var data2 = new GlbBinaryParser(mod, Path.GetFileNameWithoutExtension(path)).Parse();
+                });
+            }
+        }
+         
+        [Test]
+        [Category("Layouts")]
+        public void Layouts_BuildingLayoutInCode_WithEmptyUsageString_Throws()
+        {
+             var builder = new InputControlLayout.Builder().WithName("TestLayout");
+
+            Assert.That(() => builder.AddControl("TestControl").WithUsages(""),
+            Throws.ArgumentException.With.Message.Contains("TestControl")
+                .And.With.Message.Contains("TestLayout"));
+        }
+   
 	[UnityTest]
 	public IEnumerator CanSpawnCherry()
 	{
