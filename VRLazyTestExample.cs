@@ -47,6 +47,16 @@ namespace VRLazyTestExample
             // yield to skip a frame
             yield return null;
          }
+        
+        [Test]
+        public void DeviceList_operator_index() {
+           // !!!DeviceList_operator_index
+           DeviceList allDevices = controller.Devices;
+           for (int index = 0; index < allDevices.Count; index++) {
+               Console.WriteLine(allDevices[index]);
+          }
+	}
+      // !!!END
 
         
         [Test]
