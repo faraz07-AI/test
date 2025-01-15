@@ -71,6 +71,52 @@ namespace VRLazyTestExample
                 });
             }
         }
+
+        
+        [Test]
+        public void BuildingIntroTest()
+        {
+            // Given a builder with a predefined Intro step
+            LinearTrainingBuilder builder = new LinearTrainingBuilder("TestTraining")
+                .AddChapter(new LinearChapterBuilder("TestChapter")
+                    .AddStep(DefaultSteps.Intro("TestIntroStep")));
+
+            // When we build a training from it,
+            IStep step = builder.Build().Data.FirstChapter.Data.FirstStep;
+
+            // Then a training with an Intro step is created.
+            Assert.True(step != null);
+            Assert.True(step.Data.Name == "TestIntroStep");
+            Assert.True(step.Data.Transitions.Data.Transitions.First().Data.Conditions.Any() == false);
+        }
+
+        
+       [UnityTest]
+       public IEnumerator CanvasScalerWithChildTextObjectWithTextFontDoesNotCrash()
+       {
+        //This adds a Canvas component as well
+        m_CanvasObject = new GameObject("Canvas");
+        var canvasScaler = m_CanvasObject.AddComponent<CanvasScaler>();
+        m_CanvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceCamera;
+
+        //the crash only reproduces if the text component is a child of the game object
+        //that has the CanvasScaler component and if it has an actual font and text set
+        var textObject = new GameObject("Text").AddComponent<UnityEngine.UI.Text>();
+        textObject.font = Font.CreateDynamicFontFromOSFont("Arial", 14);
+        textObject.text = "New Text";
+        textObject.transform.SetParent(m_CanvasObject.transform);
+        canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        canvasScaler.referenceResolution = new Vector2(1080, 1020);
+
+        //The crash happens when setting the referenceResolution to a small value
+        canvasScaler.referenceResolution = new Vector2(9, 9);
+
+        //We need to wait a few milliseconds for the crash to happen, otherwise Debug.Log will
+        //get executed and the test will pass
+        yield return new WaitForSeconds(0.1f);
+
+        Assert.That(true);
+       }
          
         [Test]
         [Category("Layouts")]
