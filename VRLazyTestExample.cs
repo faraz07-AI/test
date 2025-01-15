@@ -82,7 +82,27 @@ namespace VRLazyTestExample
             Throws.ArgumentException.With.Message.Contains("TestControl")
                 .And.With.Message.Contains("TestLayout"));
         }
-   
+        
+        
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void InvalidCapacity([Values(int.MinValue, -1, 0)] int minCapacity) {
+          new RingBuffer<int>(minCapacity);
+        }
+      
+        [Test]
+        [Category("Actions")]
+        public void Actions_CannotAddSameMapToTwoDifferentAssets()
+        {
+            var asset1 = ScriptableObject.CreateInstance<InputActionAsset>();
+            var asset2 = ScriptableObject.CreateInstance<InputActionAsset>();
+            var map = new InputActionMap("map");
+
+            asset1.AddActionMap(map);
+
+            Assert.That(() => asset2.AddActionMap(map), Throws.InvalidOperationException);
+        }
+     
 	[UnityTest]
 	public IEnumerator CanSpawnCherry()
 	{
