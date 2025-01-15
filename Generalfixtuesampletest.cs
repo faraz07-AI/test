@@ -43,33 +43,33 @@ namespace Test.Zinnia.Tracking.Modification.Operation.Extraction
             EqualityTester<FbxLayer>.TestEquality(a, b, acopy);
         }
 
-        // [Test]
-        // public void ExtractInactiveComponent()
-        // {
-        //     UnityEventListenerMock sourceExtractedMock = new UnityEventListenerMock();
-        //     UnityEventListenerMock targetExtractedMock = new UnityEventListenerMock();
-        //     subject.SourceExtracted.AddListener(sourceExtractedMock.Listen);
-        //     subject.TargetExtracted.AddListener(targetExtractedMock.Listen);
+        [Test]
+        public void ExtractInactiveComponent()
+        {
+            UnityEventListenerMock sourceExtractedMock = new UnityEventListenerMock();
+            UnityEventListenerMock targetExtractedMock = new UnityEventListenerMock();
+            subject.SourceExtracted.AddListener(sourceExtractedMock.Listen);
+            subject.TargetExtracted.AddListener(targetExtractedMock.Listen);
 
-        //     TransformData sourceData = new TransformData();
-        //     TransformData targetData = new TransformData();
-        //     TransformPropertyApplier.EventData eventData = new TransformPropertyApplier.EventData();
-        //     eventData.Set(sourceData, targetData);
+            TransformData sourceData = new TransformData();
+            TransformData targetData = new TransformData();
+            TransformPropertyApplier.EventData eventData = new TransformPropertyApplier.EventData();
+            eventData.Set(sourceData, targetData);
 
-        //     subject.enabled = false;
+            subject.enabled = false;
 
-        //     Assert.IsFalse(sourceExtractedMock.Received);
-        //     Assert.IsFalse(targetExtractedMock.Received);
-        //     Assert.IsNull(subject.SourceResult);
-        //     Assert.IsNull(subject.TargetResult);
+            Assert.IsFalse(sourceExtractedMock.Received);
+            Assert.IsFalse(targetExtractedMock.Received);
+            Assert.IsNull(subject.SourceResult);
+            Assert.IsNull(subject.TargetResult);
 
-        //     subject.Extract(eventData);
+            subject.Extract(eventData);
 
-        //     Assert.IsFalse(sourceExtractedMock.Received);
-        //     Assert.IsFalse(targetExtractedMock.Received);
-        //     Assert.IsNull(subject.SourceResult);
-        //     Assert.IsNull(subject.TargetResult);
-        // }
+            Assert.IsFalse(sourceExtractedMock.Received);
+            Assert.IsFalse(targetExtractedMock.Received);
+            Assert.IsNull(subject.SourceResult);
+            Assert.IsNull(subject.TargetResult);
+        }
    }
 }
         
