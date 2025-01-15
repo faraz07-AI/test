@@ -14,6 +14,39 @@ namespace VRLazyTestExample
            this.value = value;
          }
 
+        [UnityTest]
+        public IEnumerator ShouldPauseSound()
+        {
+            am.Play(s.name);
+            yield return new WaitForSeconds(TestConstants.WAIT_TIME);
+            am.Pause(s.name);
+            Assert.False(s.source.isPlaying);
+        }
+   
+       
+	[UnityTest]
+	public IEnumerator CanSpawnCherry()
+	{
+		// Populate more food so the cherry can spawn
+		for (int i = 0; i <= 41; i++)
+		{
+			MonoBehaviour.Instantiate(food);
+		}
+		goManager.CountFood();
+		goManager.SpawnCherry();
+		yield return new WaitForSeconds(WAIT_TIME);
+		Assert.IsNotNull(GameObject.FindGameObjectWithTag("Cherry"));
+	}
+        
+        
+	[UnityTest]
+	public IEnumerator GhostCanBecomeEdible()
+	{
+	    ghost.BecomeEdible();
+	    yield return new WaitForSeconds(WAIT_TIME);
+	    Assert.True(ghost.IsEdible());
+	}  
+
         [SetUp]
         public void SetUp()
         {
