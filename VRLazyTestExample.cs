@@ -37,7 +37,14 @@ namespace VRLazyTestExample
 		yield return new WaitForSeconds(WAIT_TIME);
 		Assert.IsNotNull(GameObject.FindGameObjectWithTag("Cherry"));
 	}
-        
+	    
+        [UnityTest]
+        public IEnumerator TestSuiteWithEnumeratorPasses()
+        {
+            // Use the Assert class to test conditions.
+            // Use yield to skip a frame.
+            yield return null;
+        }
         
 	[UnityTest]
 	public IEnumerator GhostCanBecomeEdible()
