@@ -22,6 +22,15 @@ namespace VRLazyTestExample
             am.Pause(s.name);
             Assert.False(s.source.isPlaying);
         }
+
+        
+        [Test]
+        [Category("Actions")]
+        [Ignore("TODO")]
+        public void TODO_Actions_CompositesWithMissingBindings_ThrowExceptions()
+        {
+           Assert.Fail();
+        }
    
        
 	[UnityTest]
