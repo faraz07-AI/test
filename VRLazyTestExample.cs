@@ -31,8 +31,15 @@ namespace VRLazyTestExample
         {
            Assert.Fail();
         }
+
+        [Test]
+        [Category("Users")]
+        [Ignore("TODO")]
+        public void TODO_Users_CanPauseAndResumeHaptics()
+        {  
+           Assert.Fail();
+        }
    
-       
 	[UnityTest]
 	public IEnumerator CanSpawnCherry()
 	{
