@@ -1,619 +1,869 @@
-using Zinnia.Action;
+using Zinnia.Cast;
+using Zinnia.Data.Collection.List;
+using Zinnia.Rule;
+using Zinnia.Tracking;
 
-namespace Test.Zinnia.Action
+namespace Test.Zinnia.Tracking
 {
     using NUnit.Framework;
     using System.Collections;
     using Test.Zinnia.Utility.Mock;
+    using Test.Zinnia.Utility.Stub;
     using UnityEngine;
     using UnityEngine.TestTools;
+    using UnityEngine.TestTools.Utils;
 
-    public class FloatActionTest
+    public class SurfaceLocatorTest
     {
         private GameObject containingObject;
-        private FloatActionMock subject;
+        private SurfaceLocator subject;
+        private WaitForFixedUpdate waitForFixedUpdate = new WaitForFixedUpdate();
 
         [SetUp]
         public void SetUp()
         {
-            containingObject = new GameObject("FloatActionTest");
-            subject = containingObject.AddComponent<FloatActionMock>();
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.Script;
+#else
+            Physics.autoSimulation = false;
+#endif
+            containingObject = new GameObject("SurfaceLocatorTest");
+            subject = containingObject.AddComponent<SurfaceLocator>();
         }
 
         [TearDown]
         public void TearDown()
         {
             Object.DestroyImmediate(containingObject);
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
         }
 
         [Test]
-        public void IgnoreEmitEvents()
+        public void ValidSurface()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock unchangedListenerMock = new UnityEventListenerMock();
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
 
-            subject.Activated.AddListener(activatedListenerMock.Listen);
-            subject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            subject.ValueChanged.AddListener(changedListenerMock.Listen);
-            subject.ValueUnchanged.AddListener(unchangedListenerMock.Listen);
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
 
-            subject.EmitEvents = false;
+            validSurface.transform.position = Vector3.forward * 5f;
 
-            Assert.AreEqual(0f, subject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
 
-            subject.Receive(1f);
+            //Process just calls Locate() so may as well just test the first point
+            Physics.Simulate(Time.fixedDeltaTime);
+            subject.Process();
 
-            Assert.AreEqual(1f, subject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
+            Assert.IsTrue(surfaceLocatedMock.Received);
+            Assert.AreEqual(validSurface.transform, subject.surfaceData.Transform);
 
-            subject.Receive(0f);
+            subject.gameObject.SetActive(false);
+            subject.gameObject.SetActive(true);
 
-            Assert.AreEqual(0f, subject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
+            Assert.AreEqual(null, subject.surfaceData.Transform);
+
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(searchOrigin);
         }
 
         [Test]
-        public void ActivatedEmitted()
+        public void MissingSurface()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
+            GameObject searchOrigin = new GameObject("SearchOrigin");
 
-            subject.Activated.AddListener(activatedListenerMock.Listen);
-            subject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            subject.ValueChanged.AddListener(changedListenerMock.Listen);
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
 
-            Assert.AreEqual(0f, subject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.down;
 
-            subject.Receive(1f);
+            Physics.Simulate(Time.fixedDeltaTime);
+            subject.Locate();
+            Assert.IsFalse(surfaceLocatedMock.Received);
+            Assert.IsNull(subject.surfaceData.Transform);
 
-            Assert.AreEqual(1f, subject.Value);
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
+            Object.DestroyImmediate(searchOrigin);
         }
 
         [Test]
-        public void DeactivatedEmitted()
+        public void InvalidLocateSameSurface()
         {
-            subject.SetIsActivated(true);
-            subject.Value = 1f;
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
 
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
 
-            subject.Activated.AddListener(activatedListenerMock.Listen);
-            subject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            subject.ValueChanged.AddListener(changedListenerMock.Listen);
+            validSurface.transform.position = Vector3.forward * 5f;
 
-            Assert.AreEqual(1f, subject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
 
-            subject.Receive(0f);
+            //Process just calls Locate() so may as well just test the first point
+            Physics.Simulate(Time.fixedDeltaTime);
+            subject.Process();
 
-            Assert.AreEqual(0f, subject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsTrue(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
+            Assert.IsTrue(surfaceLocatedMock.Received);
+            Assert.AreEqual(validSurface.transform, subject.surfaceData.Transform);
+
+            surfaceLocatedMock.Reset();
+
+            subject.Process();
+
+            Assert.IsFalse(surfaceLocatedMock.Received);
+            Assert.AreEqual(validSurface.transform, subject.surfaceData.Transform);
+
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(searchOrigin);
         }
 
         [Test]
-        public void ChangedEmitted()
+        public void ValidLocateSameSurfaceIgnoreEquality()
         {
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
 
-            subject.ValueChanged.AddListener(changedListenerMock.Listen);
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
 
-            Assert.AreEqual(0f, subject.Value);
-            Assert.IsFalse(changedListenerMock.Received);
+            validSurface.transform.position = Vector3.forward * 5f;
 
-            subject.Receive(0.1f);
+            subject.MustChangePosition = false;
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
 
-            Assert.AreEqual(0.1f, subject.Value);
-            Assert.IsTrue(changedListenerMock.Received);
+            //Process just calls Locate() so may as well just test the first point
+            Physics.Simulate(Time.fixedDeltaTime);
+            subject.Process();
 
-            changedListenerMock.Reset();
+            Assert.IsTrue(surfaceLocatedMock.Received);
+            Assert.AreEqual(validSurface.transform, subject.surfaceData.Transform);
 
-            Assert.AreEqual(0.1f, subject.Value);
-            Assert.IsFalse(changedListenerMock.Received);
+            surfaceLocatedMock.Reset();
 
-            subject.Receive(0.1f);
+            subject.Process();
 
-            Assert.AreEqual(0.1f, subject.Value);
-            Assert.IsFalse(changedListenerMock.Received);
+            Assert.IsTrue(surfaceLocatedMock.Received);
+            Assert.AreEqual(validSurface.transform, subject.surfaceData.Transform);
 
-            changedListenerMock.Reset();
-
-            Assert.AreEqual(0.1f, subject.Value);
-            Assert.IsFalse(changedListenerMock.Received);
-
-            subject.Receive(0.2f);
-
-            Assert.AreEqual(0.2f, subject.Value);
-            Assert.IsTrue(changedListenerMock.Received);
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(searchOrigin);
         }
 
-        [Test]
-        public void DefaultValueNotTypeDefault()
+        [UnityTest]
+        public IEnumerator InvalidSurfaceDueToTargetValidity()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
 
-            subject.Activated.AddListener(activatedListenerMock.Listen);
-            subject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            subject.ValueChanged.AddListener(changedListenerMock.Listen);
+            GameObject invalidSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
 
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
 
-            subject.DefaultValue = 1f;
+            invalidSurface.transform.position = Vector3.forward * 5f;
+            invalidSurface.AddComponent<RuleStub>();
+            NegationRule negationRule = invalidSurface.AddComponent<NegationRule>();
+            AnyComponentTypeRule anyComponentTypeRule = invalidSurface.AddComponent<AnyComponentTypeRule>();
+            SerializableTypeComponentObservableList rules = containingObject.AddComponent<SerializableTypeComponentObservableList>();
+            yield return null;
 
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
+            anyComponentTypeRule.ComponentTypes = rules;
+            rules.Add(typeof(RuleStub));
 
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
+            negationRule.Rule = new RuleContainer
+            {
+                Interface = anyComponentTypeRule
+            };
+            subject.TargetValidity = new RuleContainer
+            {
+                Interface = negationRule
+            };
 
-            subject.Receive(1f);
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
 
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsTrue(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
+            yield return waitForFixedUpdate;
+            subject.Locate();
+            yield return waitForFixedUpdate;
+            Assert.IsFalse(surfaceLocatedMock.Received);
+            Assert.IsNull(subject.surfaceData.Transform);
 
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-
-            subject.Receive(0f);
-
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-
-            subject.Receive(1f);
-
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsTrue(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
+            Object.DestroyImmediate(invalidSurface);
+            Object.DestroyImmediate(searchOrigin);
         }
 
-        [Test]
-        public void DefaultValueTypeDefault()
+        [UnityTest]
+        public IEnumerator ValidSurfaceDueToTargetValidity()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
 
-            subject.Activated.AddListener(activatedListenerMock.Listen);
-            subject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            subject.ValueChanged.AddListener(changedListenerMock.Listen);
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
 
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
 
-            subject.DefaultValue = 0f;
+            validSurface.transform.position = Vector3.forward * 5f;
+            validSurface.AddComponent<RuleStub>();
+            AnyComponentTypeRule anyComponentTypeRule = validSurface.AddComponent<AnyComponentTypeRule>();
+            SerializableTypeComponentObservableList rules = containingObject.AddComponent<SerializableTypeComponentObservableList>();
+            yield return null;
 
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
+            anyComponentTypeRule.ComponentTypes = rules;
+            rules.Add(typeof(RuleStub));
 
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
+            subject.TargetValidity = new RuleContainer
+            {
+                Interface = anyComponentTypeRule
+            };
 
-            subject.Receive(0f);
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
 
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
+            yield return waitForFixedUpdate;
+            subject.Locate();
+            yield return waitForFixedUpdate;
+            Assert.IsTrue(surfaceLocatedMock.Received);
+            Assert.AreEqual(validSurface.transform, subject.surfaceData.Transform);
 
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(searchOrigin);
+        }
 
-            subject.Receive(1f);
+        [UnityTest]
+        public IEnumerator ValidSurfaceDueToEventualTargetValidity()
+        {
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
 
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
+            GameObject invalidSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
 
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
 
-            subject.Receive(0f);
+            validSurface.transform.position = Vector3.forward * 10f;
+            invalidSurface.transform.position = Vector3.forward * 5f;
+            invalidSurface.AddComponent<RuleStub>();
+            NegationRule negationRule = invalidSurface.AddComponent<NegationRule>();
+            AnyComponentTypeRule anyComponentTypeRule = invalidSurface.AddComponent<AnyComponentTypeRule>();
+            SerializableTypeComponentObservableList rules = containingObject.AddComponent<SerializableTypeComponentObservableList>();
+            yield return null;
 
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsTrue(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
+            anyComponentTypeRule.ComponentTypes = rules;
+            rules.Add(typeof(RuleStub));
+
+            negationRule.Rule = new RuleContainer
+            {
+                Interface = anyComponentTypeRule
+            };
+            subject.TargetValidity = new RuleContainer
+            {
+                Interface = negationRule
+            };
+
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
+
+            yield return waitForFixedUpdate;
+            subject.Locate();
+            yield return waitForFixedUpdate;
+            Assert.IsTrue(surfaceLocatedMock.Received);
+            Assert.AreEqual(validSurface.transform, subject.surfaceData.Transform);
+
+            Object.DestroyImmediate(invalidSurface);
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(searchOrigin);
+        }
+
+        [UnityTest]
+        public IEnumerator InvalidSurfaceDueToTargetPointValidity()
+        {
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
+
+            GameObject invalidSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
+
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
+
+            invalidSurface.transform.position = Vector3.forward * 5f;
+            invalidSurface.AddComponent<RuleStub>();
+            NegationRule negationRule = invalidSurface.AddComponent<NegationRule>();
+            Vector3RuleStub vector3Point = invalidSurface.AddComponent<Vector3RuleStub>();
+            vector3Point.toMatch = invalidSurface.transform.position - (Vector3.forward * invalidSurface.transform.localScale.z * 0.5f);
+            yield return null;
+
+            negationRule.Rule = new RuleContainer
+            {
+                Interface = vector3Point
+            };
+            subject.TargetPointValidity = new RuleContainer
+            {
+                Interface = negationRule
+            };
+
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
+
+            yield return waitForFixedUpdate;
+            subject.Locate();
+
+            yield return waitForFixedUpdate;
+            Assert.IsFalse(surfaceLocatedMock.Received);
+            Assert.IsNull(subject.surfaceData.Transform);
+
+            Object.DestroyImmediate(invalidSurface);
+            Object.DestroyImmediate(searchOrigin);
+        }
+
+
+        [UnityTest]
+        public IEnumerator ValidSurfaceDueToTargetPointValidity()
+        {
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
+
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
+
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
+
+            validSurface.transform.position = Vector3.forward * 5f;
+            Vector3RuleStub vector3Point = validSurface.AddComponent<Vector3RuleStub>();
+            vector3Point.toMatch = validSurface.transform.position - (Vector3.forward * validSurface.transform.localScale.z * 0.5f);
+            yield return null;
+
+            subject.TargetPointValidity = new RuleContainer
+            {
+                Interface = vector3Point
+            };
+
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
+
+            yield return waitForFixedUpdate;
+            subject.Locate();
+            yield return waitForFixedUpdate;
+            Assert.IsTrue(surfaceLocatedMock.Received);
+            Assert.AreEqual(validSurface.transform, subject.surfaceData.Transform);
+
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(searchOrigin);
+        }
+
+        [UnityTest]
+        public IEnumerator MissingSurfaceDueToLocatorTermination()
+        {
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
+
+            GameObject terminatingSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
+
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
+
+            terminatingSurface.transform.position = Vector3.forward * 5f;
+            terminatingSurface.AddComponent<RuleStub>();
+
+            AnyComponentTypeRule anyComponentTypeRule = terminatingSurface.AddComponent<AnyComponentTypeRule>();
+            SerializableTypeComponentObservableList rules = containingObject.AddComponent<SerializableTypeComponentObservableList>();
+            yield return null;
+
+            anyComponentTypeRule.ComponentTypes = rules;
+            rules.Add(typeof(RuleStub));
+
+            subject.LocatorTermination = new RuleContainer
+            {
+                Interface = anyComponentTypeRule
+            };
+
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
+
+            yield return waitForFixedUpdate;
+            subject.Locate();
+            yield return waitForFixedUpdate;
+            Assert.IsFalse(surfaceLocatedMock.Received);
+            Assert.IsNull(subject.surfaceData.Transform);
+
+            Object.DestroyImmediate(terminatingSurface);
+            Object.DestroyImmediate(searchOrigin);
+        }
+
+        [UnityTest]
+        public IEnumerator NoSurfaceDueToLocatorTermination()
+        {
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
+
+            GameObject terminatingSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
+
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
+
+            validSurface.transform.position = Vector3.forward * 10f;
+            terminatingSurface.transform.position = Vector3.forward * 5f;
+            terminatingSurface.AddComponent<RuleStub>();
+
+            AnyComponentTypeRule anyComponentTypeRule = terminatingSurface.AddComponent<AnyComponentTypeRule>();
+            SerializableTypeComponentObservableList rules = containingObject.AddComponent<SerializableTypeComponentObservableList>();
+            yield return null;
+
+            anyComponentTypeRule.ComponentTypes = rules;
+            rules.Add(typeof(RuleStub));
+
+            subject.LocatorTermination = new RuleContainer
+            {
+                Interface = anyComponentTypeRule
+            };
+
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
+
+            yield return waitForFixedUpdate;
+            subject.Locate();
+            yield return waitForFixedUpdate;
+            Assert.IsFalse(surfaceLocatedMock.Received);
+            Assert.IsNull(subject.surfaceData.Transform);
+
+            Object.DestroyImmediate(terminatingSurface);
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(searchOrigin);
+        }
+
+        [UnityTest]
+        public IEnumerator NoSurfaceDueToLocatorTerminationWithMidInvalidTarget()
+        {
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
+
+            GameObject invalidSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject terminatingSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
+
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
+
+            validSurface.transform.position = Vector3.forward * 15f;
+            terminatingSurface.transform.position = Vector3.forward * 10f;
+            terminatingSurface.AddComponent<RuleStub>();
+
+            AnyComponentTypeRule anyComponentTypeLocatorTerminationRule = terminatingSurface.AddComponent<AnyComponentTypeRule>();
+            SerializableTypeComponentObservableList locatorTerminationRules = containingObject.AddComponent<SerializableTypeComponentObservableList>();
+            yield return null;
+
+            anyComponentTypeLocatorTerminationRule.ComponentTypes = locatorTerminationRules;
+            locatorTerminationRules.Add(typeof(RuleStub));
+
+            subject.LocatorTermination = new RuleContainer
+            {
+                Interface = anyComponentTypeLocatorTerminationRule
+            };
+
+            yield return null;
+
+            invalidSurface.transform.position = Vector3.forward * 5f;
+            invalidSurface.AddComponent<AudioListener>();
+            NegationRule negationRule = invalidSurface.AddComponent<NegationRule>();
+            AnyComponentTypeRule anyComponentTypeTargetValidityRule = invalidSurface.AddComponent<AnyComponentTypeRule>();
+            SerializableTypeComponentObservableList targetValidityRules = containingObject.AddComponent<SerializableTypeComponentObservableList>();
+            yield return null;
+
+            anyComponentTypeTargetValidityRule.ComponentTypes = targetValidityRules;
+            targetValidityRules.Add(typeof(AudioListener));
+
+            negationRule.Rule = new RuleContainer
+            {
+                Interface = anyComponentTypeTargetValidityRule
+            };
+            subject.TargetValidity = new RuleContainer
+            {
+                Interface = negationRule
+            };
+
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
+
+            yield return waitForFixedUpdate;
+            subject.Locate();
+            yield return waitForFixedUpdate;
+            Assert.IsFalse(surfaceLocatedMock.Received);
+            Assert.IsNull(subject.surfaceData.Transform);
+
+            Object.DestroyImmediate(invalidSurface);
+            Object.DestroyImmediate(terminatingSurface);
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(searchOrigin);
         }
 
         [Test]
         public void EventsNotEmittedOnInactiveGameObject()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
 
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
+
+            validSurface.transform.position = Vector3.forward * 5f;
+
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
             subject.gameObject.SetActive(false);
-            subject.Activated.AddListener(activatedListenerMock.Listen);
-            subject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            subject.ValueChanged.AddListener(changedListenerMock.Listen);
+            Physics.Simulate(Time.fixedDeltaTime);
+            subject.Process();
 
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
+            Assert.IsFalse(surfaceLocatedMock.Received);
 
-            subject.Receive(1f);
-
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(searchOrigin);
         }
 
         [Test]
         public void EventsNotEmittedOnDisabledComponent()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
 
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
+
+            validSurface.transform.position = Vector3.forward * 5f;
+
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
             subject.enabled = false;
-            subject.Activated.AddListener(activatedListenerMock.Listen);
-            subject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            subject.ValueChanged.AddListener(changedListenerMock.Listen);
+            Physics.Simulate(Time.fixedDeltaTime);
+            subject.Process();
 
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
+            Assert.IsFalse(surfaceLocatedMock.Received);
 
-            subject.Receive(1f);
-
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(searchOrigin);
         }
 
         [UnityTest]
-        public IEnumerator DefaultValueZeroInitialValueOne()
+        public IEnumerator NearestSurface()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock unchangedListenerMock = new UnityEventListenerMock();
+#if UNITY_2022_2_OR_NEWER
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+#else
+            Physics.autoSimulation = true;
+#endif
 
-            FloatActionLiveMock liveSubject = containingObject.AddComponent<FloatActionLiveMock>();
-            liveSubject.InitialValue = 1f;
+            GameObject validSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject validSurface2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject searchOrigin = new GameObject("SearchOrigin");
+            validSurface.name = "validSurface";
+            validSurface2.name = "validSurface2";
 
-            liveSubject.Activated.AddListener(activatedListenerMock.Listen);
-            liveSubject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            liveSubject.ValueChanged.AddListener(changedListenerMock.Listen);
-            liveSubject.ValueUnchanged.AddListener(unchangedListenerMock.Listen);
+            UnityEventListenerMock surfaceLocatedMock = new UnityEventListenerMock();
+            subject.SurfaceLocated.AddListener(surfaceLocatedMock.Listen);
 
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
+            validSurface.AddComponent<RuleStub>();
+            AnyComponentTypeRule anyComponentTypeRule = validSurface.AddComponent<AnyComponentTypeRule>();
+            validSurface2.AddComponent<RuleStub>();
 
+            SerializableTypeComponentObservableList rules = containingObject.AddComponent<SerializableTypeComponentObservableList>();
             yield return null;
 
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
+            anyComponentTypeRule.ComponentTypes = rules;
+            rules.Add(typeof(RuleStub));
+
+            subject.TargetValidity = new RuleContainer
+            {
+                Interface = anyComponentTypeRule
+            };
+
+            subject.SearchOrigin = searchOrigin;
+            subject.SearchDirection = Vector3.forward;
+
+            validSurface.transform.position = Vector3.forward * 5f;
+            validSurface2.transform.position = Vector3.forward * 4.9f;
+            GameObject nearestSurface = validSurface2;
+
+            yield return waitForFixedUpdate;
+            subject.Locate();
+            yield return waitForFixedUpdate;
+            Assert.IsTrue(surfaceLocatedMock.Received);
+            Assert.IsTrue(nearestSurface.transform == subject.surfaceData.Transform, "The returned surfaceData.Transform is not the nearest");
+
+            Object.DestroyImmediate(validSurface);
+            Object.DestroyImmediate(validSurface2);
+            Object.DestroyImmediate(searchOrigin);
         }
 
-        [UnityTest]
-        public IEnumerator DefaultValueOneInitialValueOne()
+        [Test]
+        public void ClearSearchOrigin()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock unchangedListenerMock = new UnityEventListenerMock();
-
-            FloatActionLiveMock liveSubject = containingObject.AddComponent<FloatActionLiveMock>();
-            liveSubject.DefaultValue = 1f;
-            liveSubject.InitialValue = 1f;
-
-            liveSubject.ForceAwake();
-
-            liveSubject.Activated.AddListener(activatedListenerMock.Listen);
-            liveSubject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            liveSubject.ValueChanged.AddListener(changedListenerMock.Listen);
-            liveSubject.ValueUnchanged.AddListener(unchangedListenerMock.Listen);
-
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-            unchangedListenerMock.Reset();
-
-            yield return null;
-
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-            unchangedListenerMock.Reset();
-
-            liveSubject.Receive(0f);
-
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
+            Assert.IsNull(subject.SearchOrigin);
+            subject.SearchOrigin = containingObject;
+            Assert.AreEqual(containingObject, subject.SearchOrigin);
+            subject.ClearSearchOrigin();
+            Assert.IsNull(subject.SearchOrigin);
         }
 
-        [UnityTest]
-        public IEnumerator DefaultValueOneInitialValueZero()
+        [Test]
+        public void ClearSearchOriginInactiveGameObject()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock unchangedListenerMock = new UnityEventListenerMock();
-
-            FloatActionLiveMock liveSubject = containingObject.AddComponent<FloatActionLiveMock>();
-            liveSubject.DefaultValue = 1f;
-            liveSubject.InitialValue = 0f;
-
-            liveSubject.ForceAwake();
-
-            liveSubject.Activated.AddListener(activatedListenerMock.Listen);
-            liveSubject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            liveSubject.ValueChanged.AddListener(changedListenerMock.Listen);
-            liveSubject.ValueUnchanged.AddListener(unchangedListenerMock.Listen);
-
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-            unchangedListenerMock.Reset();
-
-            yield return null;
-
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-            unchangedListenerMock.Reset();
-
-            liveSubject.Receive(1f);
-
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsTrue(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
+            Assert.IsNull(subject.SearchOrigin);
+            subject.SearchOrigin = containingObject;
+            Assert.AreEqual(containingObject, subject.SearchOrigin);
+            subject.gameObject.SetActive(false);
+            subject.ClearSearchOrigin();
+            Assert.AreEqual(containingObject, subject.SearchOrigin);
         }
 
-        [UnityTest]
-        public IEnumerator ReceiveInitialValue()
+        [Test]
+        public void ClearSearchOriginInactiveComponent()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock unchangedListenerMock = new UnityEventListenerMock();
-
-            FloatActionLiveMock liveSubject = containingObject.AddComponent<FloatActionLiveMock>();
-            liveSubject.InitialValue = 1f;
-
-            liveSubject.Activated.AddListener(activatedListenerMock.Listen);
-            liveSubject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            liveSubject.ValueChanged.AddListener(changedListenerMock.Listen);
-            liveSubject.ValueUnchanged.AddListener(unchangedListenerMock.Listen);
-
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            yield return null;
-
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-            unchangedListenerMock.Reset();
-
-            liveSubject.Receive(0f);
-
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsTrue(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-            unchangedListenerMock.Reset();
-
-            liveSubject.ReceiveInitialValue();
-
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
+            Assert.IsNull(subject.SearchOrigin);
+            subject.SearchOrigin = containingObject;
+            Assert.AreEqual(containingObject, subject.SearchOrigin);
+            subject.enabled = false;
+            subject.ClearSearchOrigin();
+            Assert.AreEqual(containingObject, subject.SearchOrigin);
         }
 
-        [UnityTest]
-        public IEnumerator ResetToInitialValue()
+        [Test]
+        public void ClearTargetValidity()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock unchangedListenerMock = new UnityEventListenerMock();
-
-            FloatActionLiveMock liveSubject = containingObject.AddComponent<FloatActionLiveMock>();
-            liveSubject.InitialValue = 0f;
-
-            liveSubject.Activated.AddListener(activatedListenerMock.Listen);
-            liveSubject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            liveSubject.ValueChanged.AddListener(changedListenerMock.Listen);
-            liveSubject.ValueUnchanged.AddListener(unchangedListenerMock.Listen);
-
-            liveSubject.ForceAwake();
-
-            Assert.AreEqual(0f, liveSubject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            yield return null;
-
-            Assert.AreEqual(0f, liveSubject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-            unchangedListenerMock.Reset();
-
-            liveSubject.Receive(1f);
-
-            Assert.AreEqual(1f, liveSubject.Value);
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-            unchangedListenerMock.Reset();
-
-            liveSubject.ResetToInitialValue();
-
-            Assert.AreEqual(0f, liveSubject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
+            Assert.IsNull(subject.TargetValidity);
+            RuleContainer rule = new RuleContainer();
+            subject.TargetValidity = rule;
+            Assert.AreEqual(rule, subject.TargetValidity);
+            subject.ClearTargetValidity();
+            Assert.IsNull(subject.TargetValidity);
         }
 
-        [UnityTest]
-        public IEnumerator ResetToDefaultValue()
+        [Test]
+        public void ClearTargetValidityInactiveGameObject()
         {
-            UnityEventListenerMock activatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock deactivatedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock changedListenerMock = new UnityEventListenerMock();
-            UnityEventListenerMock unchangedListenerMock = new UnityEventListenerMock();
-
-            FloatActionLiveMock liveSubject = containingObject.AddComponent<FloatActionLiveMock>();
-            liveSubject.DefaultValue = 0f;
-
-            liveSubject.Activated.AddListener(activatedListenerMock.Listen);
-            liveSubject.Deactivated.AddListener(deactivatedListenerMock.Listen);
-            liveSubject.ValueChanged.AddListener(changedListenerMock.Listen);
-            liveSubject.ValueUnchanged.AddListener(unchangedListenerMock.Listen);
-
-            liveSubject.ForceAwake();
-
-            Assert.AreEqual(0f, liveSubject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            yield return null;
-
-            Assert.AreEqual(0f, liveSubject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-            unchangedListenerMock.Reset();
-
-            liveSubject.Receive(1f);
-
-            Assert.AreEqual(1f, liveSubject.Value);
-            Assert.IsTrue(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsTrue(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
-
-            activatedListenerMock.Reset();
-            deactivatedListenerMock.Reset();
-            changedListenerMock.Reset();
-            unchangedListenerMock.Reset();
-
-            liveSubject.ResetToDefaultValue();
-
-            Assert.AreEqual(0f, liveSubject.Value);
-            Assert.IsFalse(activatedListenerMock.Received);
-            Assert.IsFalse(deactivatedListenerMock.Received);
-            Assert.IsFalse(changedListenerMock.Received);
-            Assert.IsFalse(unchangedListenerMock.Received);
+            Assert.IsNull(subject.TargetValidity);
+            RuleContainer rule = new RuleContainer();
+            subject.TargetValidity = rule;
+            Assert.AreEqual(rule, subject.TargetValidity);
+            subject.gameObject.SetActive(false);
+            subject.ClearTargetValidity();
+            Assert.AreEqual(rule, subject.TargetValidity);
         }
-    }
 
-    public class FloatActionMock : FloatAction
-    {
-        public virtual void SetIsActivated(bool value)
+        [Test]
+        public void ClearTargetValidityInactiveComponent()
         {
-            IsActivated = value;
+            Assert.IsNull(subject.TargetValidity);
+            RuleContainer rule = new RuleContainer();
+            subject.TargetValidity = rule;
+            Assert.AreEqual(rule, subject.TargetValidity);
+            subject.enabled = false;
+            subject.ClearTargetValidity();
+            Assert.AreEqual(rule, subject.TargetValidity);
         }
-    }
 
-    public class FloatActionLiveMock : FloatAction
-    {
-        public virtual void ForceAwake()
+        [Test]
+        public void ClearTargetPointValidity()
         {
-            IsActivated = false;
-            Awake();
+            Assert.IsNull(subject.TargetPointValidity);
+            RuleContainer rule = new RuleContainer();
+            subject.TargetPointValidity = rule;
+            Assert.AreEqual(rule, subject.TargetPointValidity);
+            subject.ClearTargetPointValidity();
+            Assert.IsNull(subject.TargetPointValidity);
+        }
+
+        [Test]
+        public void ClearTargetPointValidityInactiveGameObject()
+        {
+            Assert.IsNull(subject.TargetPointValidity);
+            RuleContainer rule = new RuleContainer();
+            subject.TargetPointValidity = rule;
+            Assert.AreEqual(rule, subject.TargetPointValidity);
+            subject.gameObject.SetActive(false);
+            subject.ClearTargetPointValidity();
+            Assert.AreEqual(rule, subject.TargetPointValidity);
+        }
+
+        [Test]
+        public void ClearTargetPointValidityInactiveComponent()
+        {
+            Assert.IsNull(subject.TargetPointValidity);
+            RuleContainer rule = new RuleContainer();
+            subject.TargetPointValidity = rule;
+            Assert.AreEqual(rule, subject.TargetPointValidity);
+            subject.enabled = false;
+            subject.ClearTargetPointValidity();
+            Assert.AreEqual(rule, subject.TargetPointValidity);
+        }
+
+        [Test]
+        public void ClearLocatorTermination()
+        {
+            Assert.IsNull(subject.LocatorTermination);
+            RuleContainer rule = new RuleContainer();
+            subject.LocatorTermination = rule;
+            Assert.AreEqual(rule, subject.LocatorTermination);
+            subject.ClearLocatorTermination();
+            Assert.IsNull(subject.LocatorTermination);
+        }
+
+        [Test]
+        public void ClearLocatorTerminationInactiveGameObject()
+        {
+            Assert.IsNull(subject.LocatorTermination);
+            RuleContainer rule = new RuleContainer();
+            subject.LocatorTermination = rule;
+            Assert.AreEqual(rule, subject.LocatorTermination);
+            subject.gameObject.SetActive(false);
+            subject.ClearLocatorTermination();
+            Assert.AreEqual(rule, subject.LocatorTermination);
+        }
+
+        [Test]
+        public void ClearLocatorTerminationInactiveComponent()
+        {
+            Assert.IsNull(subject.LocatorTermination);
+            RuleContainer rule = new RuleContainer();
+            subject.LocatorTermination = rule;
+            Assert.AreEqual(rule, subject.LocatorTermination);
+            subject.enabled = false;
+            subject.ClearLocatorTermination();
+            Assert.AreEqual(rule, subject.LocatorTermination);
+        }
+
+        [Test]
+        public void ClearPhysicsCast()
+        {
+            Assert.IsNull(subject.PhysicsCast);
+            PhysicsCast cast = containingObject.AddComponent<PhysicsCast>();
+            subject.PhysicsCast = cast;
+            Assert.AreEqual(cast, subject.PhysicsCast);
+            subject.ClearPhysicsCast();
+            Assert.IsNull(subject.PhysicsCast);
+        }
+
+        [Test]
+        public void ClearPhysicsCastInactiveGameObject()
+        {
+            Assert.IsNull(subject.PhysicsCast);
+            PhysicsCast cast = containingObject.AddComponent<PhysicsCast>();
+            subject.PhysicsCast = cast;
+            Assert.AreEqual(cast, subject.PhysicsCast);
+            subject.gameObject.SetActive(false);
+            subject.ClearPhysicsCast();
+            Assert.AreEqual(cast, subject.PhysicsCast);
+        }
+
+        [Test]
+        public void ClearPhysicsCastInactiveComponent()
+        {
+            Assert.IsNull(subject.PhysicsCast);
+            PhysicsCast cast = containingObject.AddComponent<PhysicsCast>();
+            subject.PhysicsCast = cast;
+            Assert.AreEqual(cast, subject.PhysicsCast);
+            subject.enabled = false;
+            subject.ClearPhysicsCast();
+            Assert.AreEqual(cast, subject.PhysicsCast);
+        }
+
+        [Test]
+        public void SetSearchDirectionX()
+        {
+            Vector3EqualityComparer comparer = new Vector3EqualityComparer(0.1f);
+
+            Assert.That(subject.SearchDirection, Is.EqualTo(Vector3.zero).Using(comparer));
+            subject.SetSearchDirectionX(1f);
+            Assert.That(subject.SearchDirection, Is.EqualTo(Vector3.right).Using(comparer));
+        }
+
+        [Test]
+        public void SetSearchDirectionY()
+        {
+            Vector3EqualityComparer comparer = new Vector3EqualityComparer(0.1f);
+
+            Assert.That(subject.SearchDirection, Is.EqualTo(Vector3.zero).Using(comparer));
+            subject.SetSearchDirectionY(1f);
+            Assert.That(subject.SearchDirection, Is.EqualTo(Vector3.up).Using(comparer));
+        }
+
+        [Test]
+        public void SetSearchDirectionZ()
+        {
+            Vector3EqualityComparer comparer = new Vector3EqualityComparer(0.1f);
+
+            Assert.That(subject.SearchDirection, Is.EqualTo(Vector3.zero).Using(comparer));
+            subject.SetSearchDirectionZ(1f);
+            Assert.That(subject.SearchDirection, Is.EqualTo(Vector3.forward).Using(comparer));
+        }
+
+        [Test]
+        public void SetDestinationOffsetX()
+        {
+            Vector3EqualityComparer comparer = new Vector3EqualityComparer(0.1f);
+
+            Assert.That(subject.DestinationOffset, Is.EqualTo(Vector3.zero).Using(comparer));
+            subject.SetDestinationOffsetX(1f);
+            Assert.That(subject.DestinationOffset, Is.EqualTo(Vector3.right).Using(comparer));
+        }
+
+        [Test]
+        public void SetDestinationOffsetY()
+        {
+            Vector3EqualityComparer comparer = new Vector3EqualityComparer(0.1f);
+
+            Assert.That(subject.DestinationOffset, Is.EqualTo(Vector3.zero).Using(comparer));
+            subject.SetDestinationOffsetY(1f);
+            Assert.That(subject.DestinationOffset, Is.EqualTo(Vector3.up).Using(comparer));
+        }
+
+        [Test]
+        public void SetDestinationOffsetZ()
+        {
+            Vector3EqualityComparer comparer = new Vector3EqualityComparer(0.1f);
+
+            Assert.That(subject.DestinationOffset, Is.EqualTo(Vector3.zero).Using(comparer));
+            subject.SetDestinationOffsetZ(1f);
+            Assert.That(subject.DestinationOffset, Is.EqualTo(Vector3.forward).Using(comparer));
         }
     }
 }
