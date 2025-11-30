@@ -199,5 +199,12 @@ namespace VRLazyTestExample
             Assert.IsTrue(changedListenerMock.Received);
         }
 
+	[Test]
+    public void SkipWhileTest() {
+      Assert.That(LIST_0.SkipWhile(i => i < 4).SequenceEqual(
+                  LIST_0.Query().SkipWhile(i => i < 4).ToList()));
+    }
+
+
     }
 }
